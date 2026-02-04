@@ -249,6 +249,130 @@ export function createTradeCommand(): Command {
       }
     );
 
+  // Close position
+  trade
+    .command("close <symbol>")
+    .description("Close an open position")
+    .option("--json", "Output in JSON format")
+    .option("--network <network>", "Network to use (testnet, netna, local)")
+    .option("--account <alias>", "Use specific account")
+    .option("--slippage <pct>", "Slippage percentage for market close", "1")
+    .option("--size <size>", "Partial close size (default: full position)")
+    .action(
+      async (
+        symbol: string,
+        options: TradeCommandOptions & {
+          slippage?: string;
+          size?: string;
+        }
+      ) => {
+        try {
+          const dexOptions: DexOptions = {
+            network: options.network,
+            account: options.account,
+          };
+
+          const address = resolveAddress(dexOptions);
+          const config = getConfig(dexOptions);
+          const subaccountAddr = getSubaccountAddress(address, config);
+
+          const readDex = createReadDex(dexOptions);
+
+          // Get current positions
+          const positions = await readDex.userPositions.getByAddr({
+            subAddr: subaccountAddr,
+            limit: 100,
+          });
+
+          // Find position for this market
+          // Get markets to map address to name
+          const markets = await readDex.markets.getAll();
+          const market = markets.find(
+            (m) => m.market_name.toLowerCase() === symbol.toLowerCase()
+          );
+
+          if (!market) {
+            printError(`Market "${symbol}" not found`);
+            process.exit(1);
+          }
+
+          const position = positions.find(
+            (p) => p.market.toLowerCase() === market.market_addr.toLowerCase()
+          );
+
+          if (!position || position.size === 0) {
+            printError(`No open position found for ${symbol}`);
+            process.exit(1);
+          }
+
+          const positionSize = Math.abs(position.size);
+          const isLong = position.size > 0;
+          const closeSize = options.size ? parseFloat(options.size) : positionSize;
+
+          if (closeSize > positionSize) {
+            printError(`Close size ${closeSize} exceeds position size ${positionSize}`);
+            process.exit(1);
+          }
+
+          // Get current price
+          const prices = await readDex.marketPrices.getByName({ marketName: symbol });
+          const currentPrice = prices[0]?.mark_px;
+
+          if (!currentPrice) {
+            printError(`Could not get current price for ${symbol}`);
+            process.exit(1);
+          }
+
+          const slippage = parseFloat(options.slippage || "1") / 100;
+
+          // To close a long, we sell (isBuy=false). To close a short, we buy (isBuy=true).
+          const isBuy = !isLong;
+          const limitPrice = isBuy
+            ? currentPrice * (1 + slippage)
+            : currentPrice * (1 - slippage);
+
+          const chainPrice = Math.round(limitPrice * 10 ** market.px_decimals);
+          const chainSize = Math.round(closeSize * 10 ** market.sz_decimals);
+
+          console.log(
+            `Closing ${isLong ? "LONG" : "SHORT"} position: ${closeSize} ${symbol} at ~${formatPrice(limitPrice)}`
+          );
+
+          const writeDex = await createWriteDex(dexOptions);
+
+          const result = await writeDex.placeOrder({
+            marketName: symbol,
+            price: chainPrice,
+            size: chainSize,
+            isBuy,
+            timeInForce: TimeInForce.ImmediateOrCancel,
+            isReduceOnly: true, // Always reduce-only for close command
+            tickSize: market.tick_size,
+          });
+
+          formatOutput(
+            result,
+            (r) => {
+              if (r.success) {
+                printSuccess(`Position closed successfully`);
+                console.log(`Transaction: ${r.transactionHash}`);
+              } else {
+                printError(`Close failed: ${r.error}`);
+              }
+            },
+            options
+          );
+
+          if (!result.success) {
+            process.exit(1);
+          }
+        } catch (error) {
+          printError(error instanceof Error ? error.message : String(error));
+          process.exit(1);
+        }
+      }
+    );
+
   // Cancel order
   trade
     .command("cancel <orderId>")
