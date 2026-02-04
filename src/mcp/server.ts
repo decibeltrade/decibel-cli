@@ -10,17 +10,26 @@
  * - Account management (balances, deposit, withdraw)
  *
  * Usage:
- *   node dist/mcp-server.js
+ *   npx tsx dist/mcp-server.js
  *
- * Or configure in Claude Desktop's config.json:
+ * Configure in Claude's config (~/.claude.json for Claude Code):
  *   {
  *     "mcpServers": {
  *       "decibel": {
- *         "command": "decibel-cli",
- *         "args": ["mcp-server"]
+ *         "type": "stdio",
+ *         "command": "npx",
+ *         "args": ["tsx", "/path/to/decibel-cli/dist/mcp-server.js"],
+ *         "cwd": "/path/to/decibel-cli",
+ *         "env": {
+ *           "DECIBEL_NETWORK": "testnet"
+ *         }
  *       }
  *     }
  *   }
+ *
+ * Note: We use tsx because @decibeltrade/sdk has an ESM issue (missing .js
+ * extensions in compiled output). This will be fixed when the SDK updates
+ * to moduleResolution: "NodeNext".
  */
 
 import { Server } from "@modelcontextprotocol/sdk/server/index.js";

@@ -107,27 +107,32 @@ decibel-cli funds history            # Deposit/withdraw history
 
 ## MCP Server (AI Agent Integration)
 
-Run as an MCP server for AI agent integration:
+The MCP server allows AI agents like Claude to interact with Decibel DEX programmatically.
 
-```bash
-decibel-cli mcp-server
-```
+### Configuration
 
-Configure in Claude Desktop:
+Add to your Claude config file (`~/.claude.json` for Claude Code, or Claude Desktop's config):
 
 ```json
 {
   "mcpServers": {
     "decibel": {
-      "command": "decibel-cli",
-      "args": ["mcp-server"],
+      "type": "stdio",
+      "command": "npx",
+      "args": ["tsx", "/path/to/decibel-cli/dist/mcp-server.js"],
+      "cwd": "/path/to/decibel-cli",
       "env": {
+        "DECIBEL_NETWORK": "testnet",
         "DECIBEL_PRIVATE_KEY": "0x..."
       }
     }
   }
 }
 ```
+
+Replace `/path/to/decibel-cli` with the actual path to your decibel-cli installation.
+
+> **Note:** We use `tsx` instead of `node` because `@decibeltrade/sdk` has an ESM compatibility issue - its compiled JavaScript imports lack `.js` extensions, which Node.js ESM requires. The `tsx` loader handles this automatically. This will be resolved when the SDK is updated to use `moduleResolution: "NodeNext"` in its tsconfig.
 
 ### Available MCP Tools
 

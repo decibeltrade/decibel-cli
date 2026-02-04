@@ -158,27 +158,28 @@ decibel-cli funds balances       # View all balances
 
 ## MCP Server Mode
 
-For AI agent integration, run as an MCP server:
-
-```bash
-decibel-cli mcp-server
-```
-
-Or configure in Claude Desktop's config:
+For AI agent integration, configure in your Claude config file (`~/.claude.json` for Claude Code):
 
 ```json
 {
   "mcpServers": {
     "decibel": {
-      "command": "decibel-cli",
-      "args": ["mcp-server"],
+      "type": "stdio",
+      "command": "npx",
+      "args": ["tsx", "/path/to/decibel-cli/dist/mcp-server.js"],
+      "cwd": "/path/to/decibel-cli",
       "env": {
+        "DECIBEL_NETWORK": "testnet",
         "DECIBEL_PRIVATE_KEY": "0x..."
       }
     }
   }
 }
 ```
+
+Replace `/path/to/decibel-cli` with the actual path to your installation.
+
+> **Note:** We use `tsx` because `@decibeltrade/sdk` has an ESM issue (missing `.js` extensions in compiled output). This will be fixed when the SDK updates to `moduleResolution: "NodeNext"`.
 
 ## Further Reading
 

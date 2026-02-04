@@ -6,8 +6,10 @@
  * It's designed to be invoked by AI assistants like Claude.
  *
  * Usage:
- *   node dist/mcp-server.js
- *   decibel-cli mcp-server
+ *   npx tsx dist/mcp-server.js
+ *
+ * Note: Use tsx instead of node due to @decibeltrade/sdk ESM compatibility
+ * issue (missing .js extensions in compiled output).
  *
  * Environment variables (in priority order):
  *   DECIBEL_PRIVATE_KEY - Private key for trading (highest priority)
