@@ -1,6 +1,18 @@
 # Account Management Guide
 
-Decibel CLI supports two methods for authentication: stored accounts (recommended) and environment variables.
+Decibel CLI supports two methods for authentication: stored accounts and environment variables.
+
+## When to Use Which
+
+| Use Case | Method |
+|----------|--------|
+| **CLI daily trading** | Stored accounts (`account add`) |
+| **Multiple accounts** | Stored accounts |
+| **MCP server (Claude)** | Environment variable |
+| **Scripts / CI** | Environment variable |
+| **Quick one-off command** | Environment variable |
+
+> **Note:** The MCP server only reads from environment variables, not from stored accounts. See [mcp.md](./mcp.md) for MCP setup.
 
 ## Method 1: Stored Accounts (Recommended)
 

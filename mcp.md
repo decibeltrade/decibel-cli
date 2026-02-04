@@ -6,6 +6,12 @@ Connect Decibel CLI to AI assistants like Claude using the Model Context Protoco
 
 MCP (Model Context Protocol) allows AI assistants to interact with external tools and services. By running Decibel CLI as an MCP server, Claude can execute trades, check positions, and manage your account through natural language.
 
+## Authentication
+
+The MCP server uses **environment variables** for authentication (not the SQLite account storage used by the CLI). You must provide `DECIBEL_PRIVATE_KEY` in your MCP configuration.
+
+> **Note:** The MCP server and CLI account system (`decibel-cli account add`) are independent. MCP reads credentials from environment variables only.
+
 ## Quick Setup
 
 ### 1. Install Decibel CLI
