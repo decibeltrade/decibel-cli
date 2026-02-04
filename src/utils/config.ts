@@ -55,3 +55,7 @@ export function getEnvNodeApiKey(): string | undefined {
 export function getEnvGasStationApiKey(): string | undefined {
   return process.env.DECIBEL_GAS_STATION_API_KEY;
 }
+
+export function getEnvAccount(): string | undefined {
+  return process.env.DECIBEL_ACCOUNT;
+}

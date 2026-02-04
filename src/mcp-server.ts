@@ -9,21 +9,28 @@
  *   node dist/mcp-server.js
  *   decibel-cli mcp-server
  *
- * Environment variables:
- *   DECIBEL_PRIVATE_KEY - Private key for trading
+ * Environment variables (in priority order):
+ *   DECIBEL_PRIVATE_KEY - Private key for trading (highest priority)
+ *   DECIBEL_ACCOUNT - Account alias from stored accounts
+ *   (none) - Falls back to default stored account
  *   DECIBEL_NETWORK - Network (testnet, netna, local)
  */
 
 import { config } from "dotenv";
 import { runMcpServer } from "./mcp/server.js";
-import { getEnvNetwork } from "./utils/config.js";
+import { getEnvNetwork, getEnvAccount } from "./utils/config.js";
 
 // Load environment variables
 config();
 
 // Run the MCP server
+// Account resolution priority:
+// 1. DECIBEL_PRIVATE_KEY env var (if set)
+// 2. DECIBEL_ACCOUNT env var -> stored account by alias
+// 3. Default stored account (from `decibel-cli account add`)
 runMcpServer({
   network: getEnvNetwork(),
+  account: getEnvAccount(),
 }).catch((error) => {
   console.error("MCP server error:", error);
   process.exit(1);

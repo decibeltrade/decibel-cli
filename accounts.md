@@ -4,15 +4,15 @@ Decibel CLI supports two methods for authentication: stored accounts and environ
 
 ## When to Use Which
 
-| Use Case | Method |
-|----------|--------|
-| **CLI daily trading** | Stored accounts (`account add`) |
+| Use Case | Recommended Method |
+|----------|-------------------|
+| **CLI daily trading** | Stored accounts |
 | **Multiple accounts** | Stored accounts |
-| **MCP server (Claude)** | Environment variable |
+| **MCP server (Claude)** | Stored accounts (no secrets in config) |
 | **Scripts / CI** | Environment variable |
 | **Quick one-off command** | Environment variable |
 
-> **Note:** The MCP server only reads from environment variables, not from stored accounts. See [mcp.md](./mcp.md) for MCP setup.
+> **Tip:** For MCP, stored accounts are recommended because you don't need to put your private key in the Claude config file. See [mcp.md](./mcp.md) for MCP setup.
 
 ## Method 1: Stored Accounts (Recommended)
 

@@ -6,21 +6,16 @@ Connect Decibel CLI to AI assistants like Claude using the Model Context Protoco
 
 MCP (Model Context Protocol) allows AI assistants to interact with external tools and services. By running Decibel CLI as an MCP server, Claude can execute trades, check positions, and manage your account through natural language.
 
-## Authentication
+## Authentication Options
 
-The MCP server uses **environment variables** for authentication (not the SQLite account storage used by the CLI). You must provide `DECIBEL_PRIVATE_KEY` in your MCP configuration.
+The MCP server supports two authentication methods:
 
-> **Note:** The MCP server and CLI account system (`decibel-cli account add`) are independent. MCP reads credentials from environment variables only.
+1. **Stored Accounts (Recommended)** - Use accounts saved with `decibel-cli account add`
+2. **Environment Variable** - Pass private key directly in MCP config
 
 ## Quick Setup
 
 ### 1. Install Decibel CLI
-
-```bash
-npm install -g decibel-cli
-```
-
-Or clone and build from source:
 
 ```bash
 git clone git@github.com:decibeltrade/decibel-cli.git
@@ -29,12 +24,30 @@ npm install
 npm run build
 ```
 
-### 2. Configure Claude Desktop
+### 2. Add Your Account (Recommended Method)
 
-Add the following to your Claude Desktop configuration file:
+```bash
+decibel-cli account add
+# Follow the interactive prompts:
+# - Enter your private key
+# - Set an alias (e.g., "main")
+# - Set as default account
+```
 
-**macOS:** `~/Library/Application Support/Claude/claude_desktop_config.json`
-**Windows:** `%APPDATA%\Claude\claude_desktop_config.json`
+### 3. Configure Your Claude Client
+
+Choose your client:
+
+- [Claude Code](#claude-code-setup)
+- [Claude Desktop](#claude-desktop-setup)
+
+---
+
+## Claude Code Setup
+
+Claude Code reads MCP configuration from `~/.claude/settings.json`.
+
+### Using Stored Account (Recommended)
 
 ```json
 {
@@ -42,8 +55,8 @@ Add the following to your Claude Desktop configuration file:
     "decibel": {
       "command": "npx",
       "args": ["tsx", "/path/to/decibel-cli/src/mcp-server.ts"],
+      "cwd": "/path/to/decibel-cli",
       "env": {
-        "DECIBEL_PRIVATE_KEY": "0x...",
         "DECIBEL_NETWORK": "testnet"
       }
     }
@@ -51,13 +64,33 @@ Add the following to your Claude Desktop configuration file:
 }
 ```
 
-**If installed globally:**
+### Using a Specific Account
 
 ```json
 {
   "mcpServers": {
     "decibel": {
-      "command": "decibel-cli-mcp",
+      "command": "npx",
+      "args": ["tsx", "/path/to/decibel-cli/src/mcp-server.ts"],
+      "cwd": "/path/to/decibel-cli",
+      "env": {
+        "DECIBEL_ACCOUNT": "trading-bot",
+        "DECIBEL_NETWORK": "testnet"
+      }
+    }
+  }
+}
+```
+
+### Using Private Key Directly
+
+```json
+{
+  "mcpServers": {
+    "decibel": {
+      "command": "npx",
+      "args": ["tsx", "/path/to/decibel-cli/src/mcp-server.ts"],
+      "cwd": "/path/to/decibel-cli",
       "env": {
         "DECIBEL_PRIVATE_KEY": "0x...",
         "DECIBEL_NETWORK": "testnet"
@@ -67,16 +100,86 @@ Add the following to your Claude Desktop configuration file:
 }
 ```
 
-### 3. Restart Claude Desktop
+After saving, restart Claude Code or run `/mcp` to reload servers.
 
-After saving the configuration, restart Claude Desktop to load the MCP server.
+---
+
+## Claude Desktop Setup
+
+**Config location:**
+- **macOS:** `~/Library/Application Support/Claude/claude_desktop_config.json`
+- **Windows:** `%APPDATA%\Claude\claude_desktop_config.json`
+
+### Using Stored Account (Recommended)
+
+```json
+{
+  "mcpServers": {
+    "decibel": {
+      "command": "npx",
+      "args": ["tsx", "/path/to/decibel-cli/src/mcp-server.ts"],
+      "cwd": "/path/to/decibel-cli",
+      "env": {
+        "DECIBEL_NETWORK": "testnet"
+      }
+    }
+  }
+}
+```
+
+### Using a Specific Account
+
+```json
+{
+  "mcpServers": {
+    "decibel": {
+      "command": "npx",
+      "args": ["tsx", "/path/to/decibel-cli/src/mcp-server.ts"],
+      "cwd": "/path/to/decibel-cli",
+      "env": {
+        "DECIBEL_ACCOUNT": "trading-bot",
+        "DECIBEL_NETWORK": "testnet"
+      }
+    }
+  }
+}
+```
+
+### Using Private Key Directly
+
+```json
+{
+  "mcpServers": {
+    "decibel": {
+      "command": "npx",
+      "args": ["tsx", "/path/to/decibel-cli/src/mcp-server.ts"],
+      "cwd": "/path/to/decibel-cli",
+      "env": {
+        "DECIBEL_PRIVATE_KEY": "0x...",
+        "DECIBEL_NETWORK": "testnet"
+      }
+    }
+  }
+}
+```
+
+After saving, restart Claude Desktop to load the MCP server.
 
 ## Environment Variables
 
 | Variable | Required | Description |
 |----------|----------|-------------|
-| `DECIBEL_PRIVATE_KEY` | Yes | Your trading wallet private key (starts with `0x`) |
-| `DECIBEL_NETWORK` | No | Network to use: `testnet` (default), `netna`, or `local` |
+| `DECIBEL_PRIVATE_KEY` | No* | Private key (highest priority) |
+| `DECIBEL_ACCOUNT` | No* | Account alias from stored accounts |
+| `DECIBEL_NETWORK` | No | Network: `testnet` (default), `netna`, `local` |
+
+*At least one of `DECIBEL_PRIVATE_KEY`, `DECIBEL_ACCOUNT`, or a default stored account is required.
+
+### Authentication Priority
+
+1. `DECIBEL_PRIVATE_KEY` environment variable (if set)
+2. `DECIBEL_ACCOUNT` environment variable → looks up stored account
+3. Default stored account (set with `decibel-cli account set-default`)
 
 ## Available MCP Tools
 
