@@ -18,13 +18,12 @@ vi.mock("@decibeltrade/sdk", () => ({
   NETNA_CONFIG: { network: "netna", endpoint: "https://netna.decibel.trade" },
   TESTNET_CONFIG: { network: "testnet", endpoint: "https://testnet.decibel.trade" },
   LOCAL_CONFIG: { network: "local", endpoint: "http://localhost:8080" },
-  DecibelReadDex: vi.fn().mockImplementation(() => ({
-    markets: { getAll: vi.fn() },
-  })),
-  DecibelWriteDex: vi.fn().mockImplementation(() => ({
-    placeOrder: vi.fn(),
-  })),
-  getPrimarySubaccountAddr: vi.fn((walletAddr: string) => `${walletAddr}_subaccount`),
+  DecibelReadDex: vi.fn().mockImplementation(function () {
+    return { markets: { getAll: vi.fn() } };
+  }),
+  DecibelWriteDex: vi.fn().mockImplementation(function () {
+    return { placeOrder: vi.fn() };
+  }),
 }));
 
 // Mock config module with test paths
@@ -37,6 +36,8 @@ vi.mock("../../src/utils/config.js", async () => {
     getEnvPrivateKey: vi.fn(() => undefined),
     getEnvNodeApiKey: vi.fn(() => undefined),
     getEnvGasStationApiKey: vi.fn(() => undefined),
+    getEnvSubaccountAddress: vi.fn(() => undefined),
+    getEnvAccountAlias: vi.fn(() => undefined),
     getEnvNetwork: vi.fn(() => "testnet"),
     getNetworkConfig: vi.fn((network: string) => ({ network, endpoint: `https://${network}.decibel.trade` })),
   };
@@ -49,12 +50,14 @@ import {
   getConfig,
   createReadDex,
   resolveAccount,
-  resolveAddress,
+  resolveSubaccountAddress,
 } from "../../src/services/dex-factory.js";
 
 // Test private key (DO NOT use in production)
 const TEST_PRIVATE_KEY =
   "0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef";
+const TEST_SUBACCOUNT_ADDRESS =
+  "0xabcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890";
 
 describe("dex-factory", () => {
   beforeEach(() => {
@@ -114,10 +117,11 @@ describe("dex-factory", () => {
       await addAccount({
         alias: "test-account",
         privateKey: TEST_PRIVATE_KEY,
+        subaccountAddress: TEST_SUBACCOUNT_ADDRESS,
         type: "api-wallet",
       });
 
-      const result = await resolveAccount({ account: "test-account" });
+      const result = await resolveAccount({ accountAlias: "test-account" });
 
       expect(result.account).toBeDefined();
       expect(result.storedAccount).toBeDefined();
@@ -128,6 +132,7 @@ describe("dex-factory", () => {
       await addAccount({
         alias: "default-account",
         privateKey: TEST_PRIVATE_KEY,
+        subaccountAddress: TEST_SUBACCOUNT_ADDRESS,
         type: "api-wallet",
       });
 
@@ -144,7 +149,7 @@ describe("dex-factory", () => {
     });
 
     it("should throw error for non-existent alias", async () => {
-      await expect(resolveAccount({ account: "non-existent" })).rejects.toThrow(
+      await expect(resolveAccount({ accountAlias: "non-existent" })).rejects.toThrow(
         'Account "non-existent" not found'
       );
     });
@@ -152,32 +157,32 @@ describe("dex-factory", () => {
     it("should throw error for read-only account", async () => {
       await addAccount({
         alias: "readonly",
-        address: "0x123456",
+        subaccountAddress: TEST_SUBACCOUNT_ADDRESS,
         type: "read-only",
       });
 
-      await expect(resolveAccount({ account: "readonly" })).rejects.toThrow(
+      await expect(resolveAccount({ accountAlias: "readonly" })).rejects.toThrow(
         "read-only and cannot be used for transactions"
       );
     });
   });
 
-  describe("resolveAddress", () => {
-    it("should resolve address from private key option", () => {
-      const address = resolveAddress({ privateKey: TEST_PRIVATE_KEY });
+  describe("resolveSubaccountAddress", () => {
+    it("should resolve address from direct subaccountAddress option", () => {
+      const address = resolveSubaccountAddress({ subaccountAddress: TEST_SUBACCOUNT_ADDRESS });
 
-      expect(address).toBeDefined();
-      expect(address.startsWith("0x")).toBe(true);
+      expect(address).toBe(TEST_SUBACCOUNT_ADDRESS);
     });
 
     it("should resolve address from stored account by alias", async () => {
       const stored = await addAccount({
         alias: "addr-test",
         privateKey: TEST_PRIVATE_KEY,
+        subaccountAddress: TEST_SUBACCOUNT_ADDRESS,
         type: "api-wallet",
       });
 
-      const address = resolveAddress({ account: "addr-test" });
+      const address = resolveSubaccountAddress({ accountAlias: "addr-test" });
 
       expect(address).toBe(stored.address);
     });
@@ -185,33 +190,33 @@ describe("dex-factory", () => {
     it("should resolve address from read-only account", async () => {
       await addAccount({
         alias: "readonly-addr",
-        address: "0xabcdef123456",
+        subaccountAddress: TEST_SUBACCOUNT_ADDRESS,
         type: "read-only",
       });
 
-      const address = resolveAddress({ account: "readonly-addr" });
+      const address = resolveSubaccountAddress({ accountAlias: "readonly-addr" });
 
-      expect(address).toBe("0xabcdef123456");
+      expect(address).toBe(TEST_SUBACCOUNT_ADDRESS);
     });
 
     it("should resolve address from default account", async () => {
       const stored = await addAccount({
         alias: "default-addr",
-        address: "0x999888777",
+        subaccountAddress: TEST_SUBACCOUNT_ADDRESS,
         type: "read-only",
       });
 
-      const address = resolveAddress({});
+      const address = resolveSubaccountAddress({});
 
       expect(address).toBe(stored.address);
     });
 
     it("should throw error when no account configured", () => {
-      expect(() => resolveAddress({})).toThrow("No account configured");
+      expect(() => resolveSubaccountAddress({})).toThrow("No account configured");
     });
 
     it("should throw error for non-existent alias", () => {
-      expect(() => resolveAddress({ account: "no-such-account" })).toThrow(
+      expect(() => resolveSubaccountAddress({ accountAlias: "no-such-account" })).toThrow(
         'Account "no-such-account" not found'
       );
     });
@@ -223,6 +228,7 @@ describe("dex-factory", () => {
       await addAccount({
         alias: "default-account",
         privateKey: TEST_PRIVATE_KEY,
+        subaccountAddress: TEST_SUBACCOUNT_ADDRESS,
         type: "api-wallet",
         isDefault: true,
       });
@@ -242,10 +248,11 @@ describe("dex-factory", () => {
         alias: "named-account",
         privateKey:
           "0xfedcba0987654321fedcba0987654321fedcba0987654321fedcba0987654321",
+        subaccountAddress: "0x1111111111111111111111111111111111111111111111111111111111111111",
         type: "api-wallet",
       });
 
-      const result = await resolveAccount({ account: "named-account" });
+      const result = await resolveAccount({ accountAlias: "named-account" });
 
       expect(result.storedAccount?.alias).toBe("named-account");
     });

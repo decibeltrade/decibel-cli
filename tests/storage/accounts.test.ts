@@ -36,6 +36,8 @@ import {
 // Test private key (DO NOT use in production - this is a randomly generated test key)
 const TEST_PRIVATE_KEY =
   "0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef";
+const TEST_SUBACCOUNT_ADDRESS =
+  "0xabcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890";
 
 describe("accounts storage", () => {
   beforeEach(() => {
@@ -57,7 +59,7 @@ describe("accounts storage", () => {
     it("should add a read-only account", async () => {
       const account = await addAccount({
         alias: "test-readonly",
-        address: "0x123456789abcdef",
+        subaccountAddress: "0x123456789abcdef",
         type: "read-only",
       });
 
@@ -71,20 +73,21 @@ describe("accounts storage", () => {
       const account = await addAccount({
         alias: "test-wallet",
         privateKey: TEST_PRIVATE_KEY,
+        subaccountAddress: TEST_SUBACCOUNT_ADDRESS,
         type: "api-wallet",
       });
 
       expect(account.alias).toBe("test-wallet");
       expect(account.type).toBe("api-wallet");
       expect(account.encryptedKey).not.toBeNull();
-      // Address should be derived from the private key
-      expect(account.address.startsWith("0x")).toBe(true);
+      expect(account.address).toBe(TEST_SUBACCOUNT_ADDRESS);
     });
 
     it("should encrypt private key when password provided", async () => {
       const account = await addAccount({
         alias: "encrypted-wallet",
         privateKey: TEST_PRIVATE_KEY,
+        subaccountAddress: TEST_SUBACCOUNT_ADDRESS,
         type: "api-wallet",
         password: "test-password",
       });
@@ -97,6 +100,7 @@ describe("accounts storage", () => {
       const account = await addAccount({
         alias: "unencrypted-wallet",
         privateKey: TEST_PRIVATE_KEY,
+        subaccountAddress: TEST_SUBACCOUNT_ADDRESS,
         type: "api-wallet",
       });
 
@@ -106,7 +110,7 @@ describe("accounts storage", () => {
     it("should make first account default automatically", async () => {
       const account = await addAccount({
         alias: "first",
-        address: "0x123",
+        subaccountAddress: "0x123",
         type: "read-only",
       });
 
@@ -116,13 +120,13 @@ describe("accounts storage", () => {
     it("should not make second account default automatically", async () => {
       await addAccount({
         alias: "first",
-        address: "0x123",
+        subaccountAddress: "0x123",
         type: "read-only",
       });
 
       const second = await addAccount({
         alias: "second",
-        address: "0x456",
+        subaccountAddress: "0x456",
         type: "read-only",
       });
 
@@ -132,13 +136,13 @@ describe("accounts storage", () => {
     it("should set account as default when isDefault is true", async () => {
       await addAccount({
         alias: "first",
-        address: "0x123",
+        subaccountAddress: "0x123",
         type: "read-only",
       });
 
       const second = await addAccount({
         alias: "second",
-        address: "0x456",
+        subaccountAddress: "0x456",
         type: "read-only",
         isDefault: true,
       });
@@ -153,14 +157,14 @@ describe("accounts storage", () => {
     it("should throw error for duplicate alias", async () => {
       await addAccount({
         alias: "duplicate",
-        address: "0x123",
+        subaccountAddress: "0x123",
         type: "read-only",
       });
 
       await expect(
         addAccount({
           alias: "duplicate",
-          address: "0x456",
+          subaccountAddress: "0x456",
           type: "read-only",
         })
       ).rejects.toThrow('Account with alias "duplicate" already exists');
@@ -170,18 +174,20 @@ describe("accounts storage", () => {
       await expect(
         addAccount({
           alias: "no-key",
+          subaccountAddress: TEST_SUBACCOUNT_ADDRESS,
           type: "api-wallet",
         })
       ).rejects.toThrow("Private key is required for api-wallet type");
     });
 
-    it("should throw error for read-only without address", async () => {
+    it("should throw error for missing subaccount address", async () => {
       await expect(
         addAccount({
           alias: "no-address",
+          subaccountAddress: "",
           type: "read-only",
         })
-      ).rejects.toThrow("Address is required for read-only type");
+      ).rejects.toThrow("Subaccount address is required");
     });
 
     it("should throw error for invalid private key format", async () => {
@@ -189,6 +195,7 @@ describe("accounts storage", () => {
         addAccount({
           alias: "invalid-key",
           privateKey: "invalid-key",
+          subaccountAddress: TEST_SUBACCOUNT_ADDRESS,
           type: "api-wallet",
         })
       ).rejects.toThrow("Invalid private key format");
@@ -198,7 +205,7 @@ describe("accounts storage", () => {
       await expect(
         addAccount({
           alias: "invalid-address",
-          address: "not-an-address",
+          subaccountAddress: "not-an-address",
           type: "read-only",
         })
       ).rejects.toThrow("Invalid address format");
@@ -212,19 +219,19 @@ describe("accounts storage", () => {
     });
 
     it("should return all accounts", async () => {
-      await addAccount({ alias: "a1", address: "0x1", type: "read-only" });
-      await addAccount({ alias: "a2", address: "0x2", type: "read-only" });
-      await addAccount({ alias: "a3", address: "0x3", type: "read-only" });
+      await addAccount({ alias: "a1", subaccountAddress: "0x1", type: "read-only" });
+      await addAccount({ alias: "a2", subaccountAddress: "0x2", type: "read-only" });
+      await addAccount({ alias: "a3", subaccountAddress: "0x3", type: "read-only" });
 
       const accounts = getAllAccounts();
       expect(accounts.length).toBe(3);
     });
 
     it("should order default account first", async () => {
-      await addAccount({ alias: "first", address: "0x1", type: "read-only" });
+      await addAccount({ alias: "first", subaccountAddress: "0x1", type: "read-only" });
       await addAccount({
         alias: "second",
-        address: "0x2",
+        subaccountAddress: "0x2",
         type: "read-only",
         isDefault: true,
       });
@@ -238,7 +245,7 @@ describe("accounts storage", () => {
     it("should return account by id", async () => {
       const created = await addAccount({
         alias: "by-id",
-        address: "0x123",
+        subaccountAddress: "0x123",
         type: "read-only",
       });
 
@@ -256,7 +263,7 @@ describe("accounts storage", () => {
     it("should return account by alias", async () => {
       await addAccount({
         alias: "by-alias",
-        address: "0x123",
+        subaccountAddress: "0x123",
         type: "read-only",
       });
 
@@ -273,7 +280,7 @@ describe("accounts storage", () => {
 
   describe("getDefaultAccount", () => {
     it("should return default account", async () => {
-      await addAccount({ alias: "default", address: "0x1", type: "read-only" });
+      await addAccount({ alias: "default", subaccountAddress: "0x1", type: "read-only" });
 
       const defaultAccount = getDefaultAccount();
       expect(defaultAccount?.alias).toBe("default");
@@ -287,7 +294,7 @@ describe("accounts storage", () => {
 
     it("should return null when no default set", async () => {
       // Add account and manually remove default flag
-      await addAccount({ alias: "no-default", address: "0x1", type: "read-only" });
+      await addAccount({ alias: "no-default", subaccountAddress: "0x1", type: "read-only" });
 
       // Manually update to remove default (edge case)
       const db = getDatabase();
@@ -300,8 +307,8 @@ describe("accounts storage", () => {
 
   describe("setDefaultAccount", () => {
     it("should set account as default", async () => {
-      await addAccount({ alias: "first", address: "0x1", type: "read-only" });
-      await addAccount({ alias: "second", address: "0x2", type: "read-only" });
+      await addAccount({ alias: "first", subaccountAddress: "0x1", type: "read-only" });
+      await addAccount({ alias: "second", subaccountAddress: "0x2", type: "read-only" });
 
       const updated = setDefaultAccount("second");
 
@@ -320,7 +327,7 @@ describe("accounts storage", () => {
 
   describe("removeAccount", () => {
     it("should remove account by alias", async () => {
-      await addAccount({ alias: "to-remove", address: "0x1", type: "read-only" });
+      await addAccount({ alias: "to-remove", subaccountAddress: "0x1", type: "read-only" });
 
       const result = removeAccount("to-remove");
 
@@ -334,8 +341,8 @@ describe("accounts storage", () => {
     });
 
     it("should make another account default when removing default", async () => {
-      await addAccount({ alias: "first", address: "0x1", type: "read-only" });
-      await addAccount({ alias: "second", address: "0x2", type: "read-only" });
+      await addAccount({ alias: "first", subaccountAddress: "0x1", type: "read-only" });
+      await addAccount({ alias: "second", subaccountAddress: "0x2", type: "read-only" });
 
       removeAccount("first"); // First is default
 
@@ -346,7 +353,7 @@ describe("accounts storage", () => {
 
   describe("updateAccountAlias", () => {
     it("should update account alias", async () => {
-      await addAccount({ alias: "old-alias", address: "0x1", type: "read-only" });
+      await addAccount({ alias: "old-alias", subaccountAddress: "0x1", type: "read-only" });
 
       const updated = updateAccountAlias("old-alias", "new-alias");
 
@@ -362,8 +369,8 @@ describe("accounts storage", () => {
     });
 
     it("should throw error when new alias already exists", async () => {
-      await addAccount({ alias: "existing", address: "0x1", type: "read-only" });
-      await addAccount({ alias: "to-rename", address: "0x2", type: "read-only" });
+      await addAccount({ alias: "existing", subaccountAddress: "0x1", type: "read-only" });
+      await addAccount({ alias: "to-rename", subaccountAddress: "0x2", type: "read-only" });
 
       expect(() => updateAccountAlias("to-rename", "existing")).toThrow(
         'Account with alias "existing" already exists'
@@ -376,6 +383,7 @@ describe("accounts storage", () => {
       const stored = await addAccount({
         alias: "aptos-test",
         privateKey: TEST_PRIVATE_KEY,
+        subaccountAddress: TEST_SUBACCOUNT_ADDRESS,
         type: "api-wallet",
       });
 
@@ -390,6 +398,7 @@ describe("accounts storage", () => {
       const stored = await addAccount({
         alias: "encrypted-test",
         privateKey: TEST_PRIVATE_KEY,
+        subaccountAddress: TEST_SUBACCOUNT_ADDRESS,
         type: "api-wallet",
         password,
       });
@@ -402,7 +411,7 @@ describe("accounts storage", () => {
     it("should throw error for read-only account", async () => {
       const stored = await addAccount({
         alias: "readonly-test",
-        address: "0x123",
+        subaccountAddress: "0x123",
         type: "read-only",
       });
 
@@ -415,6 +424,7 @@ describe("accounts storage", () => {
       const stored = await addAccount({
         alias: "needs-password",
         privateKey: TEST_PRIVATE_KEY,
+        subaccountAddress: TEST_SUBACCOUNT_ADDRESS,
         type: "api-wallet",
         password: "secret",
       });

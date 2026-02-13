@@ -22,6 +22,8 @@ import {
   getEnvPrivateKey,
   getEnvNodeApiKey,
   getEnvGasStationApiKey,
+  getEnvAccountAlias,
+  getEnvSubaccountAddress,
 } from "../../src/utils/config.js";
 
 describe("config", () => {
@@ -148,6 +150,30 @@ describe("config", () => {
       it("should return env value when set", () => {
         process.env.DECIBEL_GAS_STATION_API_KEY = "gas-key-456";
         expect(getEnvGasStationApiKey()).toBe("gas-key-456");
+      });
+    });
+
+    describe("getEnvAccountAlias", () => {
+      it("should return undefined when env not set", () => {
+        delete process.env.DECIBEL_ACCOUNT_ALIAS;
+        expect(getEnvAccountAlias()).toBeUndefined();
+      });
+
+      it("should return env value when set", () => {
+        process.env.DECIBEL_ACCOUNT_ALIAS = "my-account";
+        expect(getEnvAccountAlias()).toBe("my-account");
+      });
+    });
+
+    describe("getEnvSubaccountAddress", () => {
+      it("should return undefined when env not set", () => {
+        delete process.env.DECIBEL_SUBACCOUNT_ADDRESS;
+        expect(getEnvSubaccountAddress()).toBeUndefined();
+      });
+
+      it("should return env value when set", () => {
+        process.env.DECIBEL_SUBACCOUNT_ADDRESS = "0xabc123";
+        expect(getEnvSubaccountAddress()).toBe("0xabc123");
       });
     });
   });

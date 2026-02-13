@@ -20,23 +20,37 @@ import {
 export const PlaceLimitOrderSchema = z.object({
   side: z.enum(["buy", "sell", "long", "short"]).describe("Order side"),
   size: z.number().positive().describe("Order size"),
-  symbol: z.string().describe("Market symbol (e.g., BTC-PERP)"),
+  symbol: z.string().describe("Market symbol (e.g., BTC/USD)"),
   price: z.number().positive().describe("Limit price"),
   timeInForce: z
     .enum(["gtc", "post-only", "ioc"])
     .optional()
     .default("gtc")
     .describe("Time in force"),
-  reduceOnly: z.boolean().optional().default(false).describe("Reduce-only order"),
+  reduceOnly: z
+    .boolean()
+    .optional()
+    .default(false)
+    .describe("Reduce-only order"),
   clientOrderId: z.string().optional().describe("Client order ID for tracking"),
 });
 
 export const PlaceMarketOrderSchema = z.object({
   side: z.enum(["buy", "sell", "long", "short"]).describe("Order side"),
   size: z.number().positive().describe("Order size"),
-  symbol: z.string().describe("Market symbol (e.g., BTC-PERP)"),
-  slippage: z.number().min(0).max(100).optional().default(1).describe("Slippage percentage"),
-  reduceOnly: z.boolean().optional().default(false).describe("Reduce-only order"),
+  symbol: z.string().describe("Market symbol (e.g., BTC/USD)"),
+  slippage: z
+    .number()
+    .min(0)
+    .max(100)
+    .optional()
+    .default(1)
+    .describe("Slippage percentage"),
+  reduceOnly: z
+    .boolean()
+    .optional()
+    .default(false)
+    .describe("Reduce-only order"),
 });
 
 export const CancelOrderSchema = z.object({
@@ -47,13 +61,21 @@ export const CancelOrderSchema = z.object({
 export const SetLeverageSchema = z.object({
   symbol: z.string().describe("Market symbol"),
   leverage: z.number().int().min(1).max(100).describe("Leverage value"),
-  marginType: z.enum(["cross", "isolated"]).optional().default("cross").describe("Margin type"),
+  marginType: z
+    .enum(["cross", "isolated"])
+    .optional()
+    .default("cross")
+    .describe("Margin type"),
 });
 
 /**
  * Round price to the nearest tick size
  */
-function roundToTick(price: number, tickSize: number, pxDecimals: number): number {
+function roundToTick(
+  price: number,
+  tickSize: number,
+  pxDecimals: number,
+): number {
   // Convert tick size from raw to human-readable
   const tickInPrice = tickSize / Math.pow(10, pxDecimals);
   // Round to nearest tick
@@ -66,7 +88,7 @@ function roundToTick(price: number, tickSize: number, pxDecimals: number): numbe
 // Tool implementations
 export async function placeLimitOrder(
   params: z.infer<typeof PlaceLimitOrderSchema>,
-  dexOptions: DexOptions = {}
+  dexOptions: DexOptions = {},
 ) {
   const isBuy = ["buy", "long"].includes(params.side);
 
@@ -86,7 +108,7 @@ export async function placeLimitOrder(
   // Get market info for price rounding
   const markets = await readDex.markets.getAll();
   const market = markets.find(
-    (m) => m.market_name.toLowerCase() === params.symbol.toLowerCase()
+    (m) => m.market_name.toLowerCase() === params.symbol.toLowerCase(),
   );
 
   if (!market) {
@@ -94,10 +116,16 @@ export async function placeLimitOrder(
   }
 
   // Round price to tick size
-  const roundedPrice = roundToTick(params.price, market.tick_size, market.px_decimals);
+  const roundedPrice = roundToTick(
+    params.price,
+    market.tick_size,
+    market.px_decimals,
+  );
 
   // Convert human-readable values to chain units (integers)
-  const chainPrice = Math.round(roundedPrice * Math.pow(10, market.px_decimals));
+  const chainPrice = Math.round(
+    roundedPrice * Math.pow(10, market.px_decimals),
+  );
   const chainSize = Math.round(params.size * Math.pow(10, market.sz_decimals));
 
   const result = await writeDex.placeOrder({
@@ -116,7 +144,7 @@ export async function placeLimitOrder(
 
 export async function placeMarketOrder(
   params: z.infer<typeof PlaceMarketOrderSchema>,
-  dexOptions: DexOptions = {}
+  dexOptions: DexOptions = {},
 ) {
   const isBuy = ["buy", "long"].includes(params.side);
   const slippage = params.slippage / 100;
@@ -127,7 +155,7 @@ export async function placeMarketOrder(
   // Get market info first
   const markets = await readDex.markets.getAll();
   const market = markets.find(
-    (m) => m.market_name.toLowerCase() === params.symbol.toLowerCase()
+    (m) => m.market_name.toLowerCase() === params.symbol.toLowerCase(),
   );
 
   if (!market) {
@@ -135,11 +163,16 @@ export async function placeMarketOrder(
   }
 
   // Get current price
-  const prices = await readDex.marketPrices.getByName({ marketName: params.symbol });
+  const prices = await readDex.marketPrices.getByName({
+    marketName: params.symbol,
+  });
   const currentPrice = prices[0]?.mark_px;
 
   if (!currentPrice) {
-    return { success: false, error: `Could not get price for ${params.symbol}` };
+    return {
+      success: false,
+      error: `Could not get price for ${params.symbol}`,
+    };
   }
 
   // Calculate limit price with slippage
@@ -148,10 +181,16 @@ export async function placeMarketOrder(
     : currentPrice * (1 - slippage);
 
   // Round to tick size
-  const roundedPrice = roundToTick(limitPrice, market.tick_size, market.px_decimals);
+  const roundedPrice = roundToTick(
+    limitPrice,
+    market.tick_size,
+    market.px_decimals,
+  );
 
   // Convert human-readable values to chain units (integers)
-  const chainPrice = Math.round(roundedPrice * Math.pow(10, market.px_decimals));
+  const chainPrice = Math.round(
+    roundedPrice * Math.pow(10, market.px_decimals),
+  );
   const chainSize = Math.round(params.size * Math.pow(10, market.sz_decimals));
 
   const result = await writeDex.placeOrder({
@@ -170,7 +209,7 @@ export async function placeMarketOrder(
 
 export async function cancelOrder(
   params: z.infer<typeof CancelOrderSchema>,
-  dexOptions: DexOptions = {}
+  dexOptions: DexOptions = {},
 ) {
   const writeDex = await createWriteDex(dexOptions);
 
@@ -188,14 +227,14 @@ export async function cancelOrder(
 
 export async function setLeverage(
   params: z.infer<typeof SetLeverageSchema>,
-  dexOptions: DexOptions = {}
+  dexOptions: DexOptions = {},
 ) {
   const writeDex = await createWriteDex(dexOptions);
   const readDex = createReadDex(dexOptions);
 
   const markets = await readDex.markets.getAll();
   const market = markets.find(
-    (m) => m.market_name.toLowerCase() === params.symbol.toLowerCase()
+    (m) => m.market_name.toLowerCase() === params.symbol.toLowerCase(),
   );
 
   if (!market) {
@@ -240,8 +279,10 @@ export async function getPositions(dexOptions: DexOptions = {}) {
 export async function getOpenOrders(dexOptions: DexOptions = {}) {
   const subaccountAddr = resolveSubaccountAddress(dexOptions);
   const readDex = createReadDex(dexOptions);
-  
-  const orders = await readDex.userOpenOrders.getByAddr({ subAddr: subaccountAddr });
+
+  const orders = await readDex.userOpenOrders.getByAddr({
+    subAddr: subaccountAddr,
+  });
 
   return { orders };
 }

@@ -16,12 +16,18 @@ install:
 config:
   requiredEnv:
     - name: DECIBEL_PRIVATE_KEY
-      description: Private key for trading (hex string starting with 0x)
+      description: API wallet private key for signing transactions (hex string starting with 0x). Create an API wallet at https://app.decibel.trade/api.
+    - name: DECIBEL_SUBACCOUNT_ADDRESS
+      description: Subaccount address for trading (hex string starting with 0x)
   optionalEnv:
+    - name: DECIBEL_ACCOUNT_ALIAS
+      description: Account alias from stored accounts (alternative to env vars)
     - name: DECIBEL_NETWORK
       description: Network to use (testnet, netna, local). Defaults to testnet.
     - name: DECIBEL_NODE_API_KEY
-      description: Node API key for higher rate limits
+      description: Node API key for higher rate limits (from https://geomi.dev)
+    - name: DECIBEL_GAS_STATION_API_KEY
+      description: Gas station API key for sponsored gas fees (from https://geomi.dev). Optional if API wallet is funded with APT.
   stateDirs:
     - ~/.decibel
 ---
@@ -38,7 +44,12 @@ This skill enables you to:
 - **Monitor Positions in Real-Time** - WebSocket-powered live updates with color-coded PnL
 - **Manage Multiple Accounts** - Store and switch between trading accounts
 - **View Market Data** - Prices, orderbooks, funding rates
-- **Deposit/Withdraw Funds** - Move USDC between wallet and trading account
+
+## How Accounts Work
+
+The CLI uses **API wallets** to sign transactions on behalf of your Decibel subaccount. API wallets are created at [app.decibel.trade/api](https://app.decibel.trade/api). They allow programmatic trading without permitting deposits or withdrawals.
+
+To manage funds (deposit/withdraw USDC), use the Decibel UI at [app.decibel.trade](https://app.decibel.trade).
 
 ## Setup Instructions
 
@@ -61,12 +72,10 @@ decibel-cli --version
 decibel-cli --help
 ```
 
-### 3. Set Up API Key for Trading
+### 3. Set Up an Account for Trading
 
-To execute trades, you need an Aptos wallet with a private key:
-
-1. Create a new wallet or use an existing Aptos wallet
-2. Export the private key (starts with `0x`)
+1. Create an API wallet at [app.decibel.trade/api](https://app.decibel.trade/api)
+2. Copy the API wallet private key and your subaccount address
 3. Add an account to local storage (Recommended):
 
 ```bash
@@ -74,10 +83,11 @@ decibel-cli account add
 # Follow the interactive prompts
 ```
 
-Or set the environment variable:
+Or set the environment variables:
 
 ```bash
-export DECIBEL_PRIVATE_KEY=0x...your_private_key...
+export DECIBEL_PRIVATE_KEY=0x...your_api_wallet_private_key...
+export DECIBEL_SUBACCOUNT_ADDRESS=0x...your_subaccount_address...
 ```
 
 ### 4. Get Testnet USDC
@@ -106,7 +116,7 @@ decibel-cli account info         # Show balances and equity
 decibel-cli trade positions           # View positions
 decibel-cli trade positions -w        # Watch mode (real-time)
 decibel-cli trade orders              # View open orders
-decibel-cli funds balances            # View balances
+decibel-cli account info              # View balances
 ```
 
 ### Trading
@@ -116,49 +126,53 @@ decibel-cli funds balances            # View balances
 decibel-cli markets ls
 
 # Place limit order
-decibel-cli trade order limit buy 0.01 BTC-PERP 50000
+decibel-cli trade order limit buy 0.01 BTC/USD 50000
 
 # Place market order
-decibel-cli trade order market buy 0.01 BTC-PERP
+decibel-cli trade order market buy 0.01 BTC/USD
 
 # Cancel order
-decibel-cli trade cancel <orderId> --market BTC-PERP
+decibel-cli trade cancel <orderId> --market BTC/USD
 
 # Set leverage
-decibel-cli trade set-leverage BTC-PERP 10
+decibel-cli trade set-leverage BTC/USD 10
 ```
 
 ### Market Data
 
 ```bash
 decibel-cli markets ls           # List all markets
-decibel-cli markets price BTC-PERP       # Get price
-decibel-cli markets price BTC-PERP -w    # Watch price
-decibel-cli markets book BTC-PERP        # Order book
-decibel-cli markets book BTC-PERP -w     # Watch order book
-```
-
-### Fund Management
-
-```bash
-decibel-cli funds deposit 100    # Deposit 100 USDC
-decibel-cli funds withdraw 50    # Withdraw 50 USDC
-decibel-cli funds history        # Deposit/withdraw history
-decibel-cli funds balances       # View all balances
+decibel-cli markets price BTC/USD       # Get price
+decibel-cli markets price BTC/USD -w    # Watch price
+decibel-cli markets book BTC/USD        # Order book
+decibel-cli markets book BTC/USD -w     # Watch order book
 ```
 
 ## Global Options
 
-| Option              | Description                           |
-| ------------------- | ------------------------------------- |
-| `--json`            | Output in JSON format (for scripting) |
+| Option              | Description                                |
+| ------------------- | ------------------------------------------ |
+| `--json`            | Output in JSON format (for scripting)      |
 | `--network <name>`  | Use specific network (testnet/netna/local) |
-| `--account <alias>` | Use specific account                  |
-| `-h, --help`        | Show help                             |
+| `--account <alias>` | Use specific account                       |
+| `-h, --help`        | Show help                                  |
 
 ## MCP Server Mode
 
-For AI agent integration, configure in your Claude config file (`~/.claude.json` for Claude Code):
+For AI agent integration, add the MCP server to Claude Code from the terminal:
+
+```bash
+claude mcp add --transport stdio \
+  --env DECIBEL_PRIVATE_KEY=ed25519-priv-0x... \
+  --env DECIBEL_SUBACCOUNT_ADDRESS=0x... \
+  --env DECIBEL_NETWORK=testnet \
+  --env DECIBEL_NODE_API_KEY=aptoslabs_... \
+  -- decibel npx -y tsx /path/to/decibel-cli/src/mcp-server.ts
+```
+
+Replace the env var values and `/path/to/decibel-cli` with your own. You can omit `DECIBEL_PRIVATE_KEY` and `DECIBEL_SUBACCOUNT_ADDRESS` if you've added a default account with `decibel-cli account add`.
+
+Alternatively, add to your Claude config file (`~/.claude/settings.json`):
 
 ```json
 {
@@ -166,11 +180,13 @@ For AI agent integration, configure in your Claude config file (`~/.claude.json`
     "decibel": {
       "type": "stdio",
       "command": "npx",
-      "args": ["tsx", "/path/to/decibel-cli/dist/mcp-server.js"],
+      "args": ["tsx", "/path/to/decibel-cli/src/mcp-server.ts"],
       "cwd": "/path/to/decibel-cli",
       "env": {
         "DECIBEL_NETWORK": "testnet",
-        "DECIBEL_PRIVATE_KEY": "0x..."
+        "DECIBEL_PRIVATE_KEY": "0x...",
+        "DECIBEL_SUBACCOUNT_ADDRESS": "0x...",
+        "DECIBEL_NODE_API_KEY": "your-node-api-key"
       }
     }
   }
@@ -187,6 +203,6 @@ See [reference.md](./reference.md) for complete command documentation and [examp
 
 ## Common Issues
 
-1. **"No account configured"**: Run `decibel-cli account add` or set `DECIBEL_PRIVATE_KEY`
-2. **"Insufficient balance"**: Deposit USDC with `decibel-cli funds deposit <amount>`
-3. **Transaction failures**: Check you have enough APT for gas fees
+1. **"No account configured"**: Run `decibel-cli account add` or set `DECIBEL_PRIVATE_KEY` and `DECIBEL_SUBACCOUNT_ADDRESS`
+2. **"Insufficient balance"**: Deposit USDC through the Decibel UI at [app.decibel.trade](https://app.decibel.trade)
+3. **Transaction failures**: Check that your API wallet has APT for gas fees, or set `DECIBEL_GAS_STATION_API_KEY`

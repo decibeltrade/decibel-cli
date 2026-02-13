@@ -8,16 +8,16 @@ This document maps the original implementation plan to the actual files created.
 
 | Feature | Status | Files |
 |---------|--------|-------|
-| CLI Entry Point | ✅ | `src/index.ts` |
-| Account Management | ✅ | `src/commands/account/index.ts` |
-| Markets Commands | ✅ | `src/commands/markets/index.ts` |
-| Trading Commands | ✅ | `src/commands/trade/index.ts` |
-| Funds Commands | ✅ | `src/commands/funds/index.ts` |
-| MCP Server | ✅ | `src/mcp-server.ts`, `src/mcp/server.ts` |
-| SQLite Storage | ✅ | `src/storage/database.ts`, `src/storage/accounts.ts` |
-| Utility Modules | ✅ | `src/utils/config.ts`, `src/utils/output.ts`, `src/utils/encryption.ts` |
-| SDK Factory | ✅ | `src/services/dex-factory.ts` |
-| Skill Documentation | ✅ | `skills/decibel/SKILL.md`, `reference.md`, `examples.md` |
+| CLI Entry Point | Done | `src/index.ts` |
+| Account Management | Done | `src/commands/account/index.ts` |
+| Markets Commands | Done | `src/commands/markets/index.ts` |
+| Trading Commands | Done | `src/commands/trade/index.ts` |
+| MCP Server | Done | `src/mcp-server.ts`, `src/mcp/server.ts` |
+| SQLite Storage | Done | `src/storage/database.ts`, `src/storage/accounts.ts` |
+| Utility Modules | Done | `src/utils/config.ts`, `src/utils/output.ts`, `src/utils/encryption.ts` |
+| SDK Factory | Done | `src/services/dex-factory.ts` |
+| Skill Documentation | Done | `skills/decibel/SKILL.md`, `reference.md`, `examples.md` |
+| Unit Tests | Done | `tests/` directory |
 
 ### Not Yet Implemented
 
@@ -25,59 +25,89 @@ This document maps the original implementation plan to the actual files created.
 |---------|----------|-------|
 | Vaults Commands | Medium | `vaults ls/info/deposit/withdraw` |
 | Server Mode | Low | Background WebSocket cache server |
-| Unit Tests | Medium | Test files in `tests/` directory |
 
 ## File Structure (Actual)
 
 ```
 decibel-cli/
-├── package.json                 # Dependencies and scripts
-├── tsconfig.json                # TypeScript configuration
-├── vitest.config.ts             # Test configuration
-├── .env.example                 # Environment variable template
-├── README.md                    # Project documentation
-├── IMPLEMENTATION.md            # This file
-│
-├── skills/decibel/              # AI Agent Documentation
-│   ├── SKILL.md                 # Skill definition with frontmatter
-│   ├── reference.md             # Complete command reference
-│   └── examples.md              # Workflow examples
-│
-├── src/
-│   ├── index.ts                 # CLI entry point (Commander.js)
-│   ├── mcp-server.ts            # MCP server entry point
-│   │
-│   ├── commands/
-│   │   ├── account/index.ts     # account add/ls/remove/set-default/info
-│   │   ├── trade/index.ts       # order limit/market, cancel, positions, orders, leverage
-│   │   ├── markets/index.ts     # ls, price, book (with -w watch mode)
-│   │   └── funds/index.ts       # deposit, withdraw, history, balances
-│   │
-│   ├── mcp/
-│   │   ├── server.ts            # MCP server with all tool handlers
-│   │   └── tools/
-│   │       ├── index.ts         # Re-exports
-│   │       ├── trading-tools.ts # place_order, cancel, set_leverage, positions
-│   │       ├── market-tools.ts  # get_markets, get_price, get_orderbook
-│   │       └── account-tools.ts # get_balances, deposit, withdraw
-│   │
-│   ├── storage/
-│   │   ├── index.ts             # Re-exports
-│   │   ├── database.ts          # SQLite initialization and connection
-│   │   └── accounts.ts          # Account CRUD operations
-│   │
-│   ├── services/
-│   │   ├── index.ts             # Re-exports
-│   │   └── dex-factory.ts       # SDK instance creation, account resolution
-│   │
-│   └── utils/
-│       ├── index.ts             # Re-exports
-│       ├── config.ts            # Network configs, env vars, paths
-│       ├── output.ts            # Table formatting, colors, JSON output
-│       └── encryption.ts        # Private key encryption/decryption
-│
-└── tests/                       # (Empty, tests not yet written)
++-- package.json                 # Dependencies and scripts
++-- tsconfig.json                # TypeScript configuration
++-- vitest.config.ts             # Test configuration
++-- .env.example                 # Environment variable template
++-- README.md                    # Project documentation
++-- IMPLEMENTATION.md            # This file
+|
++-- skills/decibel/              # AI Agent Documentation
+|   +-- SKILL.md                 # Skill definition with frontmatter
+|   +-- reference.md             # Complete command reference
+|   +-- examples.md              # Workflow examples
+|
++-- src/
+|   +-- index.ts                 # CLI entry point (Commander.js)
+|   +-- mcp-server.ts            # MCP server entry point
+|   |
+|   +-- commands/
+|   |   +-- account/index.ts     # account add/ls/remove/set-default/info
+|   |   +-- trade/index.ts       # order limit/market, cancel, positions, orders, leverage
+|   |   +-- markets/index.ts     # ls, price, book (with -w watch mode)
+|   |
+|   +-- mcp/
+|   |   +-- server.ts            # MCP server with all tool handlers
+|   |   +-- tools/
+|   |       +-- index.ts         # Re-exports
+|   |       +-- trading-tools.ts # place_order, cancel, set_leverage, positions
+|   |       +-- market-tools.ts  # get_markets, get_price, get_orderbook
+|   |       +-- account-tools.ts # get_balances
+|   |
+|   +-- storage/
+|   |   +-- index.ts             # Re-exports
+|   |   +-- database.ts          # SQLite initialization and connection
+|   |   +-- accounts.ts          # Account CRUD operations
+|   |
+|   +-- services/
+|   |   +-- index.ts             # Re-exports
+|   |   +-- dex-factory.ts       # SDK instance creation, account resolution
+|   |
+|   +-- utils/
+|       +-- index.ts             # Re-exports
+|       +-- config.ts            # Network configs, env vars, paths
+|       +-- output.ts            # Table formatting, colors, JSON output
+|       +-- encryption.ts        # Private key encryption/decryption
+|
++-- tests/
+    +-- commands/trade.test.ts   # Trade command unit tests
+    +-- services/dex-factory.test.ts # SDK factory tests
+    +-- storage/accounts.test.ts # Account storage tests
+    +-- storage/database.test.ts # Database tests
+    +-- utils/config.test.ts     # Config utility tests
+    +-- utils/encryption.test.ts # Encryption utility tests
+    +-- utils/output.test.ts     # Output formatting tests
 ```
+
+## Account System
+
+The CLI uses **API wallets** created at [app.decibel.trade/api](https://app.decibel.trade/api) for signing transactions on behalf of Decibel subaccounts. API wallets allow programmatic trading without permitting deposits or withdrawals.
+
+### Account Types
+
+- **api-wallet** - Has a private key for signing transactions, requires subaccount address
+- **read-only** - Only has a subaccount address for monitoring positions/balances
+
+### Account Resolution
+
+When resolving which account to use for transactions:
+
+1. `--account <alias>` flag (named account from storage)
+2. `DECIBEL_PRIVATE_KEY` environment variable
+3. `DECIBEL_ACCOUNT_ALIAS` environment variable
+4. Default account from SQLite database (`~/.decibel/data.db`)
+
+When resolving subaccount address for read-only operations:
+
+1. `--account <alias>` flag
+2. `DECIBEL_SUBACCOUNT_ADDRESS` environment variable
+3. `DECIBEL_ACCOUNT_ALIAS` environment variable
+4. Default account from SQLite database
 
 ## SDK Type Mapping
 
@@ -109,22 +139,6 @@ The Decibel SDK uses specific field names. Here's the mapping from common names 
 | Price | `price` |
 | Status | `details` |
 
-### Fund History (`UserFundSchema`)
-| CLI Display | SDK Field |
-|-------------|-----------|
-| Type | `movement_type` (deposit/withdrawal) |
-| Amount | `amount` |
-| Balance After | `balance_after` |
-| Time | `timestamp` |
-
-## Authentication Priority
-
-When resolving which account to use for transactions:
-
-1. `--account <alias>` flag (named account from storage)
-2. `DECIBEL_PRIVATE_KEY` environment variable
-3. Default account from SQLite database (`~/.decibel/data.db`)
-
 ## MCP Server Tools
 
 The MCP server exposes these tools for AI agent integration:
@@ -143,29 +157,40 @@ The MCP server exposes these tools for AI agent integration:
 - `get_orderbook` - Get order book with depth
 
 ### Account Tools
-- `get_balances` - Get wallet and trading account balances
-- `deposit` - Deposit USDC to trading account
-- `withdraw` - Withdraw USDC from trading account
+- `get_balances` - Get trading account balances and margin info
+
+## Environment Variables
+
+| Variable | Description |
+|----------|-------------|
+| `DECIBEL_PRIVATE_KEY` | API wallet private key for signing transactions |
+| `DECIBEL_SUBACCOUNT_ADDRESS` | Subaccount address for read operations |
+| `DECIBEL_ACCOUNT_ALIAS` | Account alias from stored accounts |
+| `DECIBEL_NETWORK` | Network: testnet, netna, local (default: testnet) |
+| `DECIBEL_NODE_API_KEY` | Node API key for higher rate limits (from geomi.dev) |
+| `DECIBEL_GAS_STATION_API_KEY` | Gas station API key for sponsored transactions (from geomi.dev) |
 
 ## Build & Run Commands
 
 ```bash
 # Install dependencies
-npm install
+pnpm install
 
 # Build TypeScript
-npm run build
+pnpm run build
 
 # Run CLI
 node dist/index.js --help
 
 # Run MCP Server
 node dist/mcp-server.js
+
+# Run tests
+pnpm test
 ```
 
 ## Next Steps
 
-1. **Add Tests** - Create unit tests for storage, utilities, and commands
-2. **Implement Vaults** - Add vault management commands
-3. **Add Server Mode** - Background WebSocket caching server
-4. **Publish to npm** - Make available as `npm install -g decibel-cli`
+1. **Implement Vaults** - Add vault management commands
+2. **Add Server Mode** - Background WebSocket caching server
+3. **Publish to npm** - Make available as `npm install -g decibel-cli`

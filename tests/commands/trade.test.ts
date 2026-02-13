@@ -60,9 +60,8 @@ vi.mock("@decibeltrade/sdk", () => ({
 vi.mock("../../src/services/dex-factory.js", () => ({
   createReadDex: vi.fn(() => mockReadDex),
   createWriteDex: vi.fn(() => Promise.resolve(mockWriteDex)),
-  resolveAddress: vi.fn(() => "0xaddress"),
+  resolveSubaccountAddress: vi.fn(() => "0xsubaccount"),
   getConfig: vi.fn(() => ({ deployment: { perpEngineGlobal: "0xglobal" } })),
-  getSubaccountAddress: vi.fn(() => "0xsubaccount"),
 }));
 
 describe("Trade Commands", () => {

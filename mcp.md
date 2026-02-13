@@ -6,12 +6,16 @@ Connect Decibel CLI to AI assistants like Claude using the Model Context Protoco
 
 MCP (Model Context Protocol) allows AI assistants to interact with external tools and services. By running Decibel CLI as an MCP server, Claude can execute trades, check positions, and manage your account through natural language.
 
+## How It Works
+
+The MCP server uses **API wallets** to sign transactions on behalf of your Decibel subaccount. API wallets can be created at [app.decibel.trade/api](https://app.decibel.trade/api). They allow programmatic trading actions without permitting deposits or withdrawals.
+
 ## Authentication Options
 
 The MCP server supports two authentication methods:
 
 1. **Stored Accounts (Recommended)** - Use accounts saved with `decibel-cli account add`
-2. **Environment Variable** - Pass private key directly in MCP config
+2. **Environment Variables** - Pass API wallet private key and subaccount address directly in MCP config
 
 ## Quick Setup
 
@@ -20,8 +24,8 @@ The MCP server supports two authentication methods:
 ```bash
 git clone git@github.com:decibeltrade/decibel-cli.git
 cd decibel-cli
-npm install
-npm run build
+pnpm install
+pnpm run build
 ```
 
 ### 2. Add Your Account (Recommended Method)
@@ -29,7 +33,8 @@ npm run build
 ```bash
 decibel-cli account add
 # Follow the interactive prompts:
-# - Enter your private key
+# - Enter your subaccount address
+# - Enter your API wallet private key
 # - Set an alias (e.g., "main")
 # - Set as default account
 ```
@@ -45,9 +50,40 @@ Choose your client:
 
 ## Claude Code Setup
 
+There are two ways to add the MCP server to Claude Code: using the `claude mcp add` CLI command (recommended), or manually editing `~/.claude/settings.json`.
+
+### Option A: Using the CLI (Recommended)
+
+Run `claude mcp add` from your terminal to register the server in one command:
+
+```bash
+claude mcp add --transport stdio \
+  --env DECIBEL_PRIVATE_KEY=ed25519-priv-0x... \
+  --env DECIBEL_SUBACCOUNT_ADDRESS=0x... \
+  --env DECIBEL_NETWORK=testnet \
+  --env DECIBEL_NODE_API_KEY=aptoslabs_... \
+  -- decibel npx -y tsx /path/to/decibel-cli/src/mcp-server.ts
+```
+
+Replace the values with your own:
+- `DECIBEL_PRIVATE_KEY` - Your API wallet private key
+- `DECIBEL_SUBACCOUNT_ADDRESS` - Your subaccount address
+- `DECIBEL_NODE_API_KEY` - Your node API key (from [geomi.dev](https://geomi.dev))
+- `/path/to/decibel-cli` - The actual path to your decibel-cli installation
+
+You can omit `DECIBEL_PRIVATE_KEY` and `DECIBEL_SUBACCOUNT_ADDRESS` if you've already added a default account with `decibel-cli account add`.
+
+To verify the server was added:
+
+```bash
+claude mcp list
+```
+
+### Option B: Manual JSON Configuration
+
 Claude Code reads MCP configuration from `~/.claude/settings.json`.
 
-### Using Stored Account (Recommended)
+#### Using Stored Account (Recommended)
 
 ```json
 {
@@ -57,14 +93,15 @@ Claude Code reads MCP configuration from `~/.claude/settings.json`.
       "args": ["tsx", "/path/to/decibel-cli/src/mcp-server.ts"],
       "cwd": "/path/to/decibel-cli",
       "env": {
-        "DECIBEL_NETWORK": "testnet"
+        "DECIBEL_NETWORK": "testnet",
+        "DECIBEL_NODE_API_KEY": "your-node-api-key"
       }
     }
   }
 }
 ```
 
-### Using a Specific Account
+#### Using a Specific Account
 
 ```json
 {
@@ -74,15 +111,16 @@ Claude Code reads MCP configuration from `~/.claude/settings.json`.
       "args": ["tsx", "/path/to/decibel-cli/src/mcp-server.ts"],
       "cwd": "/path/to/decibel-cli",
       "env": {
-        "DECIBEL_ACCOUNT": "trading-bot",
-        "DECIBEL_NETWORK": "testnet"
+        "DECIBEL_ACCOUNT_ALIAS": "trading-bot",
+        "DECIBEL_NETWORK": "testnet",
+        "DECIBEL_NODE_API_KEY": "your-node-api-key"
       }
     }
   }
 }
 ```
 
-### Using Private Key Directly
+#### Using Environment Variables Directly
 
 ```json
 {
@@ -93,7 +131,9 @@ Claude Code reads MCP configuration from `~/.claude/settings.json`.
       "cwd": "/path/to/decibel-cli",
       "env": {
         "DECIBEL_PRIVATE_KEY": "0x...",
-        "DECIBEL_NETWORK": "testnet"
+        "DECIBEL_SUBACCOUNT_ADDRESS": "0x...",
+        "DECIBEL_NETWORK": "testnet",
+        "DECIBEL_NODE_API_KEY": "your-node-api-key"
       }
     }
   }
@@ -120,7 +160,8 @@ After saving, restart Claude Code or run `/mcp` to reload servers.
       "args": ["tsx", "/path/to/decibel-cli/src/mcp-server.ts"],
       "cwd": "/path/to/decibel-cli",
       "env": {
-        "DECIBEL_NETWORK": "testnet"
+        "DECIBEL_NETWORK": "testnet",
+        "DECIBEL_NODE_API_KEY": "your-node-api-key"
       }
     }
   }
@@ -137,15 +178,16 @@ After saving, restart Claude Code or run `/mcp` to reload servers.
       "args": ["tsx", "/path/to/decibel-cli/src/mcp-server.ts"],
       "cwd": "/path/to/decibel-cli",
       "env": {
-        "DECIBEL_ACCOUNT": "trading-bot",
-        "DECIBEL_NETWORK": "testnet"
+        "DECIBEL_ACCOUNT_ALIAS": "trading-bot",
+        "DECIBEL_NETWORK": "testnet",
+        "DECIBEL_NODE_API_KEY": "your-node-api-key"
       }
     }
   }
 }
 ```
 
-### Using Private Key Directly
+### Using Environment Variables Directly
 
 ```json
 {
@@ -156,7 +198,9 @@ After saving, restart Claude Code or run `/mcp` to reload servers.
       "cwd": "/path/to/decibel-cli",
       "env": {
         "DECIBEL_PRIVATE_KEY": "0x...",
-        "DECIBEL_NETWORK": "testnet"
+        "DECIBEL_SUBACCOUNT_ADDRESS": "0x...",
+        "DECIBEL_NETWORK": "testnet",
+        "DECIBEL_NODE_API_KEY": "your-node-api-key"
       }
     }
   }
@@ -169,16 +213,19 @@ After saving, restart Claude Desktop to load the MCP server.
 
 | Variable | Required | Description |
 |----------|----------|-------------|
-| `DECIBEL_PRIVATE_KEY` | No* | Private key (highest priority) |
-| `DECIBEL_ACCOUNT` | No* | Account alias from stored accounts |
+| `DECIBEL_PRIVATE_KEY` | No* | API wallet private key (highest priority) |
+| `DECIBEL_SUBACCOUNT_ADDRESS` | No* | Subaccount address for trading |
+| `DECIBEL_ACCOUNT_ALIAS` | No* | Account alias from stored accounts |
 | `DECIBEL_NETWORK` | No | Network: `testnet` (default), `netna`, `local` |
+| `DECIBEL_NODE_API_KEY` | No | Node API key for higher rate limits (from [geomi.dev](https://geomi.dev)) |
+| `DECIBEL_GAS_STATION_API_KEY` | No | Gas station API key for sponsored transactions (from [geomi.dev](https://geomi.dev)) |
 
-*At least one of `DECIBEL_PRIVATE_KEY`, `DECIBEL_ACCOUNT`, or a default stored account is required.
+*At least one of `DECIBEL_PRIVATE_KEY` + `DECIBEL_SUBACCOUNT_ADDRESS`, `DECIBEL_ACCOUNT_ALIAS`, or a default stored account is required.
 
 ### Authentication Priority
 
 1. `DECIBEL_PRIVATE_KEY` environment variable (if set)
-2. `DECIBEL_ACCOUNT` environment variable → looks up stored account
+2. `DECIBEL_ACCOUNT_ALIAS` environment variable -> looks up stored account
 3. Default stored account (set with `decibel-cli account set-default`)
 
 ## Available MCP Tools
@@ -208,9 +255,7 @@ Once connected, Claude has access to these tools:
 
 | Tool | Description |
 |------|-------------|
-| `get_balances` | Get wallet and trading account balances |
-| `deposit` | Deposit USDC to trading account |
-| `withdraw` | Withdraw USDC from trading account |
+| `get_balances` | Get trading account balances and margin info |
 
 ## Example Conversations
 
@@ -236,7 +281,7 @@ Once configured, you can interact with Decibel naturally:
 ### Server not connecting
 
 1. Verify the path to `decibel-cli` is correct
-2. Check that `DECIBEL_PRIVATE_KEY` is set
+2. Check that authentication is configured (stored account or env vars)
 3. Restart Claude Desktop after config changes
 
 ### Permission denied
@@ -254,6 +299,7 @@ You can test the MCP server independently:
 ```bash
 # Set environment variables
 export DECIBEL_PRIVATE_KEY=0x...
+export DECIBEL_SUBACCOUNT_ADDRESS=0x...
 export DECIBEL_NETWORK=testnet
 
 # Run the server
@@ -265,9 +311,17 @@ The server communicates via stdio, so you'll see it waiting for input.
 ## Security Notes
 
 - **Never commit your private key** to version control
-- Use a dedicated trading wallet with limited funds
+- Use API wallets (not your main wallet) for programmatic trading
+- API wallets cannot deposit or withdraw funds, limiting risk
 - Consider using testnet first to verify the setup
-- The MCP server has full trading permissions for the configured wallet
+- The MCP server has trading permissions only (no deposits/withdrawals)
+
+## Gas Fees
+
+API wallets need APT to pay for gas fees. You have two options:
+
+1. **Fund your API wallet with APT** - Send APT to your API wallet address
+2. **Use a gas station API key** - Get one from [geomi.dev](https://geomi.dev) and set `DECIBEL_GAS_STATION_API_KEY`
 
 ## Alternative: Using .env File
 
@@ -277,7 +331,9 @@ Instead of putting credentials in the Claude config, you can use a `.env` file:
 
 ```bash
 DECIBEL_PRIVATE_KEY=0x...
+DECIBEL_SUBACCOUNT_ADDRESS=0x...
 DECIBEL_NETWORK=testnet
+DECIBEL_NODE_API_KEY=your-node-api-key
 ```
 
 2. Update Claude config to not include env vars:

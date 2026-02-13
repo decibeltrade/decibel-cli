@@ -18,6 +18,14 @@ decibel-cli --version
 decibel-cli --help
 ```
 
+### Creating an API Wallet
+
+1. Visit [app.decibel.trade/api](https://app.decibel.trade/api)
+2. Connect your wallet
+3. Create a subaccount (or use an existing one)
+4. Create an API wallet for your subaccount
+5. Copy the API wallet private key and subaccount address
+
 ### Adding Your First Account
 
 ```bash
@@ -26,25 +34,23 @@ decibel-cli account add
 
 # You'll be prompted for:
 # 1. Account type (API wallet for trading, read-only for monitoring)
-# 2. Private key or address
-# 3. Alias (e.g., "main", "trading", "bot")
-# 4. Whether to set as default
+# 2. Subaccount address
+# 3. API wallet private key (for api-wallet type)
+# 4. Alias (e.g., "main", "trading", "bot")
+# 5. Whether to set as default
 
 # Verify the account was added
 decibel-cli account ls
 ```
 
-### Funding Your Account
+### Checking Your Balance
 
 ```bash
-# Check current balances
-decibel-cli funds balances
+# Check account info (balances, equity)
+decibel-cli account info
 
-# If wallet has USDC but trading account is empty, deposit
-decibel-cli funds deposit 100
-
-# Verify deposit
-decibel-cli funds balances
+# If you need to deposit USDC, use the Decibel UI:
+# Visit https://app.decibel.trade to deposit funds
 ```
 
 ---
@@ -62,30 +68,30 @@ decibel-cli markets ls
 
 ```bash
 # Get BTC price
-decibel-cli markets price BTC-PERP
+decibel-cli markets price BTC/USD
 
 # Watch price in real-time
-decibel-cli markets price BTC-PERP -w
+decibel-cli markets price BTC/USD -w
 ```
 
 ### 3. Set Leverage (Optional)
 
 ```bash
 # Set 10x leverage for BTC
-decibel-cli trade set-leverage BTC-PERP 10
+decibel-cli trade set-leverage BTC/USD 10
 
 # Use isolated margin instead
-decibel-cli trade set-leverage BTC-PERP 5 --isolated
+decibel-cli trade set-leverage BTC/USD 5 --isolated
 ```
 
 ### 4. Place an Order
 
 ```bash
 # Limit order: buy 0.01 BTC at $50,000
-decibel-cli trade order limit buy 0.01 BTC-PERP 50000
+decibel-cli trade order limit buy 0.01 BTC/USD 50000
 
 # Market order: buy 0.01 BTC at current price
-decibel-cli trade order market buy 0.01 BTC-PERP
+decibel-cli trade order market buy 0.01 BTC/USD
 
 # Check order was placed
 decibel-cli trade orders
@@ -105,10 +111,10 @@ decibel-cli trade positions -w
 
 ```bash
 # Close long with market sell
-decibel-cli trade order market sell 0.01 BTC-PERP
+decibel-cli trade order market sell 0.01 BTC/USD
 
 # Or place limit close
-decibel-cli trade order limit sell 0.01 BTC-PERP 55000
+decibel-cli trade order limit sell 0.01 BTC/USD 55000
 ```
 
 ---
@@ -117,13 +123,13 @@ decibel-cli trade order limit sell 0.01 BTC-PERP 55000
 
 ```bash
 # 1. Check current price
-decibel-cli markets price BTC-PERP
+decibel-cli markets price BTC/USD
 
 # 2. Set leverage
-decibel-cli trade set-leverage BTC-PERP 10
+decibel-cli trade set-leverage BTC/USD 10
 
 # 3. Place limit long order slightly below market
-decibel-cli trade order limit long 0.01 BTC-PERP 49500
+decibel-cli trade order limit long 0.01 BTC/USD 49500
 
 # 4. Check order status
 decibel-cli trade orders
@@ -132,7 +138,7 @@ decibel-cli trade orders
 decibel-cli trade positions -w
 
 # 6. Close with limit when ready
-decibel-cli trade order limit short 0.01 BTC-PERP 52000 --reduce-only
+decibel-cli trade order limit short 0.01 BTC/USD 52000 --reduce-only
 ```
 
 ---
@@ -141,16 +147,16 @@ decibel-cli trade order limit short 0.01 BTC-PERP 52000 --reduce-only
 
 ```bash
 # 1. Check current price
-decibel-cli markets price ETH-PERP
+decibel-cli markets price ETH/USD
 
 # 2. Open short position
-decibel-cli trade order market short 0.1 ETH-PERP
+decibel-cli trade order market short 0.1 ETH/USD
 
 # 3. Monitor position
 decibel-cli trade positions -w
 
 # 4. Close short with long
-decibel-cli trade order market long 0.1 ETH-PERP
+decibel-cli trade order market long 0.1 ETH/USD
 ```
 
 ---
@@ -159,14 +165,14 @@ decibel-cli trade order market long 0.1 ETH-PERP
 
 ```bash
 # 1. Watch the order book in one terminal
-decibel-cli markets book BTC-PERP -w
+decibel-cli markets book BTC/USD -w
 
 # 2. In another terminal, place quick orders
-decibel-cli trade order limit long 0.001 BTC-PERP 49950
-decibel-cli trade order limit short 0.001 BTC-PERP 50050
+decibel-cli trade order limit long 0.001 BTC/USD 49950
+decibel-cli trade order limit short 0.001 BTC/USD 50050
 
 # 3. Cancel if price moves away
-decibel-cli trade cancel-all --market BTC-PERP -y
+decibel-cli trade cancel-all --market BTC/USD -y
 ```
 
 ---
@@ -178,11 +184,11 @@ decibel-cli trade cancel-all --market BTC-PERP -y
 ```bash
 # Add trading account
 decibel-cli account add
-# Enter private key, set alias "trading"
+# Enter subaccount address, API wallet private key, set alias "trading"
 
 # Add monitoring-only account
 decibel-cli account add
-# Choose read-only, enter address, set alias "whale-watch"
+# Choose read-only, enter subaccount address, set alias "whale-watch"
 
 # List all accounts
 decibel-cli account ls
@@ -195,7 +201,7 @@ decibel-cli account ls
 decibel-cli account set-default whale-watch
 
 # Trade from specific account
-decibel-cli trade order limit buy 0.01 BTC-PERP 50000 --account trading
+decibel-cli trade order limit buy 0.01 BTC/USD 50000 --account trading
 ```
 
 ---
@@ -212,14 +218,14 @@ decibel-cli trade positions -w
 decibel-cli trade orders -w
 
 # Terminal 3: Watch BTC price
-decibel-cli markets price BTC-PERP -w
+decibel-cli markets price BTC/USD -w
 ```
 
 ### Order Book Analysis
 
 ```bash
 # Watch ETH order book with 20 levels
-decibel-cli markets book ETH-PERP -w --depth 20
+decibel-cli markets book ETH/USD -w --depth 20
 
 # The display shows:
 # - Top bid/ask levels
@@ -241,7 +247,7 @@ decibel-cli markets book ETH-PERP -w --depth 20
 TARGET=55000
 
 while true; do
-  PRICE=$(decibel-cli markets price BTC-PERP --json | jq -r '.markPrice')
+  PRICE=$(decibel-cli markets price BTC/USD --json | jq -r '.markPrice')
 
   if (( $(echo "$PRICE > $TARGET" | bc -l) )); then
     echo "ALERT: BTC above $TARGET at $PRICE"
@@ -258,7 +264,7 @@ done
 #!/bin/bash
 # place-order.sh - Place order with logging
 
-SYMBOL="BTC-PERP"
+SYMBOL="BTC/USD"
 SIDE="buy"
 SIZE="0.001"
 PRICE="50000"
@@ -291,7 +297,7 @@ echo "Taking portfolio snapshot..."
 
 decibel-cli trade positions --json > "$OUTDIR/positions_$DATE.json"
 decibel-cli trade orders --json > "$OUTDIR/orders_$DATE.json"
-decibel-cli funds balances --json > "$OUTDIR/balances_$DATE.json"
+decibel-cli account info --json > "$OUTDIR/balances_$DATE.json"
 
 echo "Snapshot saved to $OUTDIR/"
 ```
@@ -302,7 +308,7 @@ echo "Snapshot saved to $OUTDIR/"
 #!/bin/bash
 # track-prices.sh - Track multiple assets
 
-ASSETS="BTC-PERP ETH-PERP SOL-PERP"
+ASSETS="BTC/USD ETH/USD SOL/USD"
 
 echo "Asset Prices - $(date)"
 echo "========================"
@@ -324,13 +330,13 @@ done
 decibel-cli markets ls --json | jq '.[] | {name, maxLeverage}'
 
 # Get specific position data
-decibel-cli trade positions --json | jq '.[] | select(.market_name == "BTC-PERP")'
+decibel-cli trade positions --json | jq '.[] | select(.market_name == "BTC/USD")'
 
 # Get open orders for a market
-decibel-cli trade orders --json | jq '.[] | select(.market_name == "ETH-PERP")'
+decibel-cli trade orders --json | jq '.[] | select(.market_name == "ETH/USD")'
 
 # Extract account value
-decibel-cli funds balances --json | jq '.accountValue'
+decibel-cli account info --json | jq '.perp_equity_balance'
 ```
 
 ### Piping to Other Tools

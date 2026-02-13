@@ -13,7 +13,7 @@
  * Usage:
  *   decibel-cli --help                      # Show all commands
  *   decibel-cli markets ls --json           # List markets (JSON output)
- *   decibel-cli trade order limit buy 0.01 BTC-PERP 50000
+ *   decibel-cli trade order limit buy 0.01 BTC/USD 50000
  */
 
 import { Command } from "commander";
@@ -34,7 +34,11 @@ program
   .name("decibel-cli")
   .description("Command-line interface for trading on Decibel DEX")
   .version("1.0.0")
-  .option("--network <network>", "Network to use (testnet, netna, local)", "testnet");
+  .option(
+    "--network <network>",
+    "Network to use (testnet, netna, local)",
+    "testnet",
+  );
 
 // Add command groups
 program.addCommand(createAccountCommand());
@@ -43,7 +47,10 @@ program.addCommand(createTradeCommand());
 
 // Global error handler for unhandled promise rejections
 process.on("unhandledRejection", (reason) => {
-  console.error("Error:", reason instanceof Error ? reason.message : String(reason));
+  console.error(
+    "Error:",
+    reason instanceof Error ? reason.message : String(reason),
+  );
   process.exit(1);
 });
 

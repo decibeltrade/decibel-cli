@@ -87,7 +87,7 @@ const TOOLS: Tool[] = [
         },
         symbol: {
           type: "string",
-          description: "Market symbol (e.g., BTC-PERP, ETH-PERP)",
+          description: "Market symbol (e.g., BTC/USD, ETH/USD)",
         },
         price: {
           type: "number",
@@ -219,7 +219,7 @@ const TOOLS: Tool[] = [
       properties: {
         symbol: {
           type: "string",
-          description: "Market symbol (e.g., BTC-PERP)",
+          description: "Market symbol (e.g., BTC/USD)",
         },
       },
       required: ["symbol"],

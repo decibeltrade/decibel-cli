@@ -13,7 +13,7 @@ import { createReadDex, DexOptions } from "../../services/dex-factory.js";
 export const GetMarketsSchema = z.object({}).describe("Get all available markets");
 
 export const GetPriceSchema = z.object({
-  symbol: z.string().describe("Market symbol (e.g., BTC-PERP)"),
+  symbol: z.string().describe("Market symbol (e.g., BTC/USD)"),
 });
 
 export const GetOrderbookSchema = z.object({

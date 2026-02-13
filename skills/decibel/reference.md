@@ -20,6 +20,8 @@ These options can be used with any command:
 
 Commands for managing trading accounts stored locally in `~/.decibel/data.db`.
 
+Accounts use **API wallets** created at [app.decibel.trade/api](https://app.decibel.trade/api) to sign transactions on behalf of your Decibel subaccount. API wallets allow trading but cannot deposit or withdraw funds.
+
 ### `decibel-cli account add`
 
 Interactive wizard to add a new account.
@@ -27,9 +29,10 @@ Interactive wizard to add a new account.
 **Process:**
 
 1. Choose account type (API wallet for trading, read-only for monitoring)
-2. Enter private key (for API wallet) or address (for read-only)
-3. Set an alias for easy identification
-4. Optionally set as default account
+2. Enter subaccount address
+3. Enter API wallet private key (for API wallet type)
+4. Set an alias for easy identification
+5. Optionally set as default account
 
 **Example:**
 
@@ -45,7 +48,7 @@ List all configured accounts.
 **Output columns:**
 
 - Alias
-- Address (truncated)
+- Address (truncated subaccount address)
 - Type (api-wallet or read-only)
 - Default status
 
@@ -123,7 +126,7 @@ Place a limit order.
 |----------|-------------|
 | `side` | `buy`, `sell`, `long`, or `short` |
 | `size` | Order size |
-| `symbol` | Market symbol (e.g., BTC-PERP) |
+| `symbol` | Market symbol (e.g., BTC/USD) |
 | `price` | Limit price |
 
 **Options:**
@@ -137,13 +140,13 @@ Place a limit order.
 
 ```bash
 # Buy 0.01 BTC at $50,000
-decibel-cli trade order limit buy 0.01 BTC-PERP 50000
+decibel-cli trade order limit buy 0.01 BTC/USD 50000
 
 # Post-only sell order
-decibel-cli trade order limit sell 0.05 ETH-PERP 3500 --tif post-only
+decibel-cli trade order limit sell 0.05 ETH/USD 3500 --tif post-only
 
 # Reduce-only order
-decibel-cli trade order limit sell 0.01 BTC-PERP 55000 --reduce-only
+decibel-cli trade order limit sell 0.01 BTC/USD 55000 --reduce-only
 ```
 
 **JSON output:**
@@ -176,8 +179,8 @@ Place a market order.
 **Examples:**
 
 ```bash
-decibel-cli trade order market buy 0.01 BTC-PERP
-decibel-cli trade order market sell 0.1 ETH-PERP --slippage 0.5
+decibel-cli trade order market buy 0.01 BTC/USD
+decibel-cli trade order market sell 0.1 ETH/USD --slippage 0.5
 ```
 
 ### `decibel-cli trade cancel <orderId>`
@@ -192,7 +195,7 @@ Cancel an order by ID.
 **Example:**
 
 ```bash
-decibel-cli trade cancel 12345 --market BTC-PERP
+decibel-cli trade cancel 12345 --market BTC/USD
 ```
 
 ### `decibel-cli trade cancel-all`
@@ -209,7 +212,7 @@ Cancel all open orders.
 
 ```bash
 decibel-cli trade cancel-all
-decibel-cli trade cancel-all --market BTC-PERP -y
+decibel-cli trade cancel-all --market BTC/USD -y
 ```
 
 ### `decibel-cli trade set-leverage <symbol> <leverage>`
@@ -231,8 +234,8 @@ Set leverage for a market.
 **Examples:**
 
 ```bash
-decibel-cli trade set-leverage BTC-PERP 10
-decibel-cli trade set-leverage ETH-PERP 5 --isolated
+decibel-cli trade set-leverage BTC/USD 10
+decibel-cli trade set-leverage ETH/USD 5 --isolated
 ```
 
 ### `decibel-cli trade positions`
@@ -327,15 +330,15 @@ Get current price for a market.
 **Examples:**
 
 ```bash
-decibel-cli markets price BTC-PERP
-decibel-cli markets price ETH-PERP -w
+decibel-cli markets price BTC/USD
+decibel-cli markets price ETH/USD -w
 ```
 
 **JSON output:**
 
 ```json
 {
-  "symbol": "BTC-PERP",
+  "symbol": "BTC/USD",
   "markPrice": 50000.0,
   "indexPrice": 50010.0,
   "fundingRate": 0.0001,
@@ -363,55 +366,9 @@ View order book for a market.
 **Examples:**
 
 ```bash
-decibel-cli markets book BTC-PERP
-decibel-cli markets book ETH-PERP -w --depth 20
+decibel-cli markets book BTC/USD
+decibel-cli markets book ETH/USD -w --depth 20
 ```
-
----
-
-## Fund Management
-
-### `decibel-cli funds deposit <amount>`
-
-Deposit USDC from wallet to trading account.
-
-**Example:**
-
-```bash
-decibel-cli funds deposit 100
-```
-
-### `decibel-cli funds withdraw <amount>`
-
-Withdraw USDC from trading account to wallet.
-
-**Example:**
-
-```bash
-decibel-cli funds withdraw 50
-```
-
-### `decibel-cli funds balances`
-
-View wallet and trading account balances.
-
-**Output includes:**
-
-- Wallet USDC balance
-- Account balance (deposited)
-- Account value (including unrealized PnL)
-- Available balance
-- Unrealized PnL
-
-### `decibel-cli funds history`
-
-View deposit and withdrawal history.
-
-**Options:**
-| Option | Description |
-|--------|-------------|
-| `--limit <n>` | Number of records (default: 20) |
-| `--json` | JSON output |
 
 ---
 
@@ -419,39 +376,41 @@ View deposit and withdrawal history.
 
 Common errors and their meanings:
 
-| Error                    | Cause                 | Solution                                |
-| ------------------------ | --------------------- | --------------------------------------- |
-| `No account configured`  | No account set up     | Run `decibel-cli account add`           |
-| `Invalid private key`    | Malformed private key | Ensure key starts with `0x`             |
-| `Insufficient balance`   | Not enough funds      | Deposit with `decibel-cli funds deposit` |
-| `Invalid market`         | Unknown market symbol | Check `decibel-cli markets ls`          |
-| `Order failed`           | Various reasons       | Check error message for details         |
+| Error                   | Cause                 | Solution                                                        |
+| ----------------------- | --------------------- | --------------------------------------------------------------- |
+| `No account configured` | No account set up     | Run `decibel-cli account add` or set env vars                   |
+| `Invalid private key`   | Malformed private key | Ensure key starts with `0x`                                     |
+| `Insufficient balance`  | Not enough funds      | Deposit USDC via [app.decibel.trade](https://app.decibel.trade) |
+| `Invalid market`        | Unknown market symbol | Check `decibel-cli markets ls`                                  |
+| `Order failed`          | Various reasons       | Check error message for details                                 |
 
 ---
 
 ## Exit Codes
 
-| Code | Meaning       |
-| ---- | ------------- |
-| 0    | Success       |
-| 1    | Error         |
+| Code | Meaning |
+| ---- | ------- |
+| 0    | Success |
+| 1    | Error   |
 
 ---
 
 ## Environment Variables
 
-| Variable                  | Description                                                |
-| ------------------------- | ---------------------------------------------------------- |
-| `DECIBEL_PRIVATE_KEY`     | Private key for trading (required if not using account db) |
-| `DECIBEL_NETWORK`         | Network: testnet, netna, local (default: testnet)          |
-| `DECIBEL_NODE_API_KEY`    | Node API key for higher rate limits                        |
-| `DECIBEL_GAS_STATION_API_KEY` | Gas station API key for sponsored transactions         |
+| Variable                      | Description                                                     |
+| ----------------------------- | --------------------------------------------------------------- |
+| `DECIBEL_PRIVATE_KEY`         | API wallet private key for signing transactions                 |
+| `DECIBEL_SUBACCOUNT_ADDRESS`  | Subaccount address for trading                                  |
+| `DECIBEL_ACCOUNT_ALIAS`       | Account alias from stored accounts                              |
+| `DECIBEL_NETWORK`             | Network: testnet, netna, local (default: testnet)               |
+| `DECIBEL_NODE_API_KEY`        | Node API key for higher rate limits (from geomi.dev)            |
+| `DECIBEL_GAS_STATION_API_KEY` | Gas station API key for sponsored transactions (from geomi.dev) |
 
 ---
 
 ## Local Storage
 
-| Path                      | Description                                  |
-| ------------------------- | -------------------------------------------- |
-| `~/.decibel/data.db`      | SQLite database for account management       |
-| `~/.decibel/server.pid`   | Background server PID file (future)          |
+| Path                    | Description                            |
+| ----------------------- | -------------------------------------- |
+| `~/.decibel/data.db`    | SQLite database for account management |
+| `~/.decibel/server.pid` | Background server PID file (future)    |

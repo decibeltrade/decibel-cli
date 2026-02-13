@@ -36,19 +36,15 @@
   "dependencies": {
     "@aptos-labs/gas-station-client": "^2.0.3",
     "@aptos-labs/ts-sdk": "^5.2.1",
-    "@decibeltrade/sdk": "^0.3.0",
+    "@decibeltrade/sdk": "^0.3.1",
     "@modelcontextprotocol/sdk": "^1.0.0",
     "better-sqlite3": "^11.0.0",
     "chalk": "^5.3.0",
     "cli-table3": "^0.6.5",
     "commander": "^12.1.0",
     "dotenv": "^16.4.5",
-    "ink": "^5.0.1",
-    "ink-spinner": "^5.0.0",
     "inquirer": "^9.2.23",
     "isomorphic-ws": "^5.0.0",
-    "ora": "^8.0.1",
-    "react": "^18.3.1",
     "ws": "^8.18.1",
     "zod": "^3.25.62"
   },
@@ -56,14 +52,13 @@
     "@types/better-sqlite3": "^7.6.11",
     "@types/inquirer": "^9.0.7",
     "@types/node": "^22.0.0",
-    "@types/react": "^18.3.3",
-    "@types/ws": "^8.18.0",
+    "@types/ws": "^8.18.1",
     "eslint": "^9.28.0",
     "tsx": "^4.21.0",
-    "typescript": "^5.8.3",
-    "vitest": "^3.1.1"
+    "typescript": "^5.9.3",
+    "vitest": "^4.0.18"
   },
   "engines": {
-    "node": ">=18.0.0"
+    "node": ">=22.0.0"
   }
 }
