@@ -26,7 +26,6 @@ config();
 import { createAccountCommand } from "./commands/account/index.js";
 import { createMarketsCommand } from "./commands/markets/index.js";
 import { createTradeCommand } from "./commands/trade/index.js";
-import { createFundsCommand } from "./commands/funds/index.js";
 
 // Create the main program
 const program = new Command();
@@ -41,7 +40,6 @@ program
 program.addCommand(createAccountCommand());
 program.addCommand(createMarketsCommand());
 program.addCommand(createTradeCommand());
-program.addCommand(createFundsCommand());
 
 // Global error handler for unhandled promise rejections
 process.on("unhandledRejection", (reason) => {

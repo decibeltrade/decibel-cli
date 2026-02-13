@@ -5,7 +5,6 @@ import {
   encryptPrivateKey,
   isValidAddress,
   isValidPrivateKey,
-  normalizePrivateKey,
 } from "../utils/encryption.js";
 import { getDatabase } from "./database.js";
 
@@ -49,28 +48,28 @@ function rowToAccount(row: AccountRow): StoredAccount {
  */
 export async function addAccount(params: {
   alias: string;
-  privateKey?: string;
-  address?: string;
   type: "api-wallet" | "read-only";
+  subaccountAddress: string;
+  privateKey?: string;
   isDefault?: boolean;
   password?: string;
 }): Promise<StoredAccount> {
-  const { alias, privateKey, address, type, isDefault = false, password } = params;
+  const { alias, type, subaccountAddress, privateKey, isDefault = false, password } = params;
 
   // Validate inputs
+  if (!subaccountAddress) {
+    throw new Error("Subaccount address is required");
+  }
+  if (!isValidAddress(subaccountAddress)) {
+    throw new Error("Invalid address format. Must be a hex string starting with 0x");
+  }
+
   if (type === "api-wallet") {
     if (!privateKey) {
       throw new Error("Private key is required for api-wallet type");
     }
     if (!isValidPrivateKey(privateKey)) {
       throw new Error("Invalid private key format. Must be a hex string starting with 0x");
-    }
-  } else {
-    if (!address) {
-      throw new Error("Address is required for read-only type");
-    }
-    if (!isValidAddress(address)) {
-      throw new Error("Invalid address format. Must be a hex string starting with 0x");
     }
   }
 
@@ -82,24 +81,16 @@ export async function addAccount(params: {
     throw new Error(`Account with alias "${alias}" already exists`);
   }
 
-  // Derive address from private key for api-wallet
-  let accountAddress = address;
   let encryptedKey: string | null = null;
 
   if (type === "api-wallet" && privateKey) {
-    // Normalize the key (handles AIP-80 format: ed25519-priv-0x...)
-    const normalizedKey = normalizePrivateKey(privateKey);
-    const privKey = new Ed25519PrivateKey(normalizedKey);
-    const account = Account.fromPrivateKey({ privateKey: privKey });
-    accountAddress = account.accountAddress.toString();
-
     // Encrypt the private key if password provided, otherwise store plain
     // Note: For security, we always recommend using a password
     if (password) {
-      encryptedKey = await encryptPrivateKey(normalizedKey, password);
+      encryptedKey = await encryptPrivateKey(privateKey, password);
     } else {
       // Store without encryption (not recommended for production)
-      encryptedKey = normalizedKey;
+      encryptedKey = privateKey;
     }
   }
 
@@ -114,7 +105,7 @@ export async function addAccount(params: {
       `INSERT INTO accounts (alias, address, encrypted_key, type, is_default, created_at, updated_at)
        VALUES (?, ?, ?, ?, ?, datetime('now'), datetime('now'))`
     )
-    .run(alias, accountAddress!, encryptedKey, type, isDefault ? 1 : 0);
+    .run(alias, subaccountAddress, encryptedKey, type, isDefault ? 1 : 0);
 
   // If this is the first account, make it default
   const count = db.prepare("SELECT COUNT(*) as count FROM accounts").get() as { count: number };

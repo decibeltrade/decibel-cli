@@ -16,15 +16,17 @@ import {
   getEnvNetwork,
   getEnvNodeApiKey,
   getEnvPrivateKey,
+  getEnvSubaccountAddress,
   getNetworkConfig,
   NetworkName,
 } from "../utils/config.js";
 
 export interface DexOptions {
   network?: NetworkName;
-  account?: string; // Account alias
-  privateKey?: string; // Direct private key (overrides account)
-  password?: string; // For encrypted accounts
+  accountAlias?: string; // Account alias for a stored account
+  password?: string; // Password for encrypted private key of a stored account
+  subaccountAddress?: string; // Subaccount address (if not using a stored account)
+  privateKey?: string; // Private key for API wallet (for signing transactions)
   nodeApiKey?: string;
   gasStationApiKey?: string;
 }
@@ -86,10 +88,10 @@ export async function resolveAccount(
   // Priority 3: Named account from storage
   let storedAccount: StoredAccount | null = null;
 
-  if (options.account) {
-    storedAccount = getAccountByAlias(options.account);
+  if (options.accountAlias) {
+    storedAccount = getAccountByAlias(options.accountAlias);
     if (!storedAccount) {
-      throw new Error(`Account "${options.account}" not found. Run "decibel-cli account ls" to see available accounts.`);
+      throw new Error(`Account "${options.accountAlias}" not found. Run "decibel-cli account ls" to see available accounts.`);
     }
   } else {
     // Priority 4: Default account
@@ -114,29 +116,25 @@ export async function resolveAccount(
 /**
  * Get the address for the current account (works for read-only too)
  */
-export function resolveAddress(options: DexOptions = {}): string {
-  // Priority 1: Direct private key from options
-  if (options.privateKey) {
-    const privKey = new Ed25519PrivateKey(options.privateKey);
-    const account = Account.fromPrivateKey({ privateKey: privKey });
-    return account.accountAddress.toString();
+export function resolveSubaccountAddress(options: DexOptions = {}): string {
+  // Priority 1: Direct address from options
+  if (options.subaccountAddress) {
+    return options.subaccountAddress;
   }
 
   // Priority 2: Environment variable
-  const envKey = getEnvPrivateKey();
-  if (envKey) {
-    const privKey = new Ed25519PrivateKey(envKey);
-    const account = Account.fromPrivateKey({ privateKey: privKey });
-    return account.accountAddress.toString();
+  const envSubaccountAddress = getEnvSubaccountAddress();
+  if (envSubaccountAddress) {
+    return envSubaccountAddress;
   }
 
   // Priority 3: Named account from storage
   let storedAccount: StoredAccount | null = null;
 
-  if (options.account) {
-    storedAccount = getAccountByAlias(options.account);
+  if (options.accountAlias) {
+    storedAccount = getAccountByAlias(options.accountAlias);
     if (!storedAccount) {
-      throw new Error(`Account "${options.account}" not found.`);
+      throw new Error(`Account "${options.accountAlias}" not found.`);
     }
   } else {
     storedAccount = getDefaultAccount();
@@ -161,37 +159,4 @@ export async function createWriteDex(
   return new DecibelWriteDex(config, account, {
     nodeApiKey,
   });
-}
-
-/**
- * Get subaccount seed bytes for address derivation
- */
-function getSubaccountSeedBytes(ownerAddr: AccountAddress, seed: string): Uint8Array {
-  return new Uint8Array([...ownerAddr.toUint8Array(), ...new MoveString(seed).bcsToBytes()]);
-}
-
-/**
- * Get primary subaccount address from wallet address
- * Implements the same logic as SDK's getPrimarySubaccountAddr
- */
-export function getSubaccountAddress(
-  walletAddress: string,
-  config: DecibelConfig
-): string {
-  const account = AccountAddress.fromString(walletAddress);
-  const packageAddress = AccountAddress.fromString(config.deployment.package);
-
-  // Derive the GlobalSubaccountManager address
-  const deriver = createObjectAddress(
-    packageAddress,
-    new TextEncoder().encode("GlobalSubaccountManager")
-  );
-
-  // Derive the primary subaccount address
-  const subaccountAddr = createObjectAddress(
-    deriver,
-    getSubaccountSeedBytes(account, "primary_subaccount")
-  );
-
-  return subaccountAddr.toString();
 }

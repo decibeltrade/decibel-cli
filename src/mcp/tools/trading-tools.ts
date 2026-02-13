@@ -12,8 +12,7 @@ import {
   createReadDex,
   createWriteDex,
   getConfig,
-  resolveAddress,
-  getSubaccountAddress,
+  resolveSubaccountAddress,
   DexOptions,
 } from "../../services/dex-factory.js";
 
@@ -51,6 +50,19 @@ export const SetLeverageSchema = z.object({
   marginType: z.enum(["cross", "isolated"]).optional().default("cross").describe("Margin type"),
 });
 
+/**
+ * Round price to the nearest tick size
+ */
+function roundToTick(price: number, tickSize: number, pxDecimals: number): number {
+  // Convert tick size from raw to human-readable
+  const tickInPrice = tickSize / Math.pow(10, pxDecimals);
+  // Round to nearest tick
+  const rounded = Math.round(price / tickInPrice) * tickInPrice;
+  // Fix floating point precision issues
+  const precision = Math.max(0, pxDecimals - Math.floor(Math.log10(tickSize)));
+  return Number(rounded.toFixed(precision));
+}
+
 // Tool implementations
 export async function placeLimitOrder(
   params: z.infer<typeof PlaceLimitOrderSchema>,
@@ -71,21 +83,32 @@ export async function placeLimitOrder(
   const writeDex = await createWriteDex(dexOptions);
   const readDex = createReadDex(dexOptions);
 
-  // Get tick size for price rounding
+  // Get market info for price rounding
   const markets = await readDex.markets.getAll();
   const market = markets.find(
     (m) => m.market_name.toLowerCase() === params.symbol.toLowerCase()
   );
 
+  if (!market) {
+    return { success: false, error: `Market ${params.symbol} not found` };
+  }
+
+  // Round price to tick size
+  const roundedPrice = roundToTick(params.price, market.tick_size, market.px_decimals);
+
+  // Convert human-readable values to chain units (integers)
+  const chainPrice = Math.round(roundedPrice * Math.pow(10, market.px_decimals));
+  const chainSize = Math.round(params.size * Math.pow(10, market.sz_decimals));
+
   const result = await writeDex.placeOrder({
     marketName: params.symbol,
-    price: params.price,
-    size: params.size,
+    price: chainPrice,
+    size: chainSize,
     isBuy,
     timeInForce,
     isReduceOnly: params.reduceOnly,
     clientOrderId: params.clientOrderId,
-    tickSize: market?.tick_size,
+    tickSize: market.tick_size,
   });
 
   return result;
@@ -101,6 +124,16 @@ export async function placeMarketOrder(
   const writeDex = await createWriteDex(dexOptions);
   const readDex = createReadDex(dexOptions);
 
+  // Get market info first
+  const markets = await readDex.markets.getAll();
+  const market = markets.find(
+    (m) => m.market_name.toLowerCase() === params.symbol.toLowerCase()
+  );
+
+  if (!market) {
+    return { success: false, error: `Market ${params.symbol} not found` };
+  }
+
   // Get current price
   const prices = await readDex.marketPrices.getByName({ marketName: params.symbol });
   const currentPrice = prices[0]?.mark_px;
@@ -114,20 +147,22 @@ export async function placeMarketOrder(
     ? currentPrice * (1 + slippage)
     : currentPrice * (1 - slippage);
 
-  // Get tick size
-  const markets = await readDex.markets.getAll();
-  const market = markets.find(
-    (m) => m.market_name.toLowerCase() === params.symbol.toLowerCase()
-  );
+  // Round to tick size
+  const roundedPrice = roundToTick(limitPrice, market.tick_size, market.px_decimals);
+
+  // Convert human-readable values to chain units (integers)
+  const chainPrice = Math.round(roundedPrice * Math.pow(10, market.px_decimals));
+  const chainSize = Math.round(params.size * Math.pow(10, market.sz_decimals));
 
   const result = await writeDex.placeOrder({
     marketName: params.symbol,
-    price: limitPrice,
-    size: params.size,
+    price: chainPrice,
+    size: chainSize,
     isBuy,
     timeInForce: TimeInForce.ImmediateOrCancel,
     isReduceOnly: params.reduceOnly,
-    tickSize: market?.tick_size,
+    tickSize: market.tick_size,
+    subaccountAddr: resolveSubaccountAddress(dexOptions),
   });
 
   return result;
@@ -142,6 +177,7 @@ export async function cancelOrder(
   const result = await writeDex.cancelOrder({
     orderId: params.orderId,
     marketName: params.symbol,
+    subaccountAddr: resolveSubaccountAddress(dexOptions),
   });
 
   return {
@@ -175,7 +211,7 @@ export async function setLeverage(
 
   const result = await writeDex.configureUserSettingsForMarket({
     marketAddr: market.market_addr,
-    subaccountAddr: "",
+    subaccountAddr: resolveSubaccountAddress(dexOptions),
     isCross: params.marginType === "cross",
     userLeverage: params.leverage,
   });
@@ -190,11 +226,9 @@ export async function setLeverage(
 }
 
 export async function getPositions(dexOptions: DexOptions = {}) {
-  const address = resolveAddress(dexOptions);
-  const config = getConfig(dexOptions);
-  const subaccountAddr = getSubaccountAddress(address, config);
-
+  const subaccountAddr = resolveSubaccountAddress(dexOptions);
   const readDex = createReadDex(dexOptions);
+
   const positions = await readDex.userPositions.getByAddr({
     subAddr: subaccountAddr,
     limit: 100,
@@ -204,11 +238,9 @@ export async function getPositions(dexOptions: DexOptions = {}) {
 }
 
 export async function getOpenOrders(dexOptions: DexOptions = {}) {
-  const address = resolveAddress(dexOptions);
-  const config = getConfig(dexOptions);
-  const subaccountAddr = getSubaccountAddress(address, config);
-
+  const subaccountAddr = resolveSubaccountAddress(dexOptions);
   const readDex = createReadDex(dexOptions);
+  
   const orders = await readDex.userOpenOrders.getByAddr({ subAddr: subaccountAddr });
 
   return { orders };

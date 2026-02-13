@@ -64,13 +64,7 @@ import {
   GetOrderbookSchema,
 } from "./tools/market-tools.js";
 
-import {
-  getBalances,
-  deposit,
-  DepositSchema,
-  withdraw,
-  WithdrawSchema,
-} from "./tools/account-tools.js";
+import { getBalances } from "./tools/account-tools.js";
 
 // Define available tools
 const TOOLS: Tool[] = [
@@ -218,7 +212,8 @@ const TOOLS: Tool[] = [
   },
   {
     name: "get_price",
-    description: "Get current price, funding rate, and open interest for a market.",
+    description:
+      "Get current price, funding rate, and open interest for a market.",
     inputSchema: {
       type: "object",
       properties: {
@@ -299,7 +294,7 @@ export async function createMcpServer(dexOptions: DexOptions = {}) {
       capabilities: {
         tools: {},
       },
-    }
+    },
   );
 
   // Handle list tools request
@@ -319,13 +314,13 @@ export async function createMcpServer(dexOptions: DexOptions = {}) {
         case "place_limit_order":
           result = await placeLimitOrder(
             PlaceLimitOrderSchema.parse(args),
-            dexOptions
+            dexOptions,
           );
           break;
         case "place_market_order":
           result = await placeMarketOrder(
             PlaceMarketOrderSchema.parse(args),
-            dexOptions
+            dexOptions,
           );
           break;
         case "cancel_order":
@@ -349,18 +344,15 @@ export async function createMcpServer(dexOptions: DexOptions = {}) {
           result = await getPrice(GetPriceSchema.parse(args), dexOptions);
           break;
         case "get_orderbook":
-          result = await getOrderbook(GetOrderbookSchema.parse(args), dexOptions);
+          result = await getOrderbook(
+            GetOrderbookSchema.parse(args),
+            dexOptions,
+          );
           break;
 
         // Account tools
         case "get_balances":
           result = await getBalances(dexOptions);
-          break;
-        case "deposit":
-          result = await deposit(DepositSchema.parse(args), dexOptions);
-          break;
-        case "withdraw":
-          result = await withdraw(WithdrawSchema.parse(args), dexOptions);
           break;
 
         default:

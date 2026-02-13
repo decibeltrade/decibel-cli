@@ -27,7 +27,6 @@
     "dev": "tsc --watch",
     "start": "tsx dist/index.js",
     "start:mcp": "tsx dist/mcp-server.js",
-    "cli": "tsx dist/index.js",
     "test": "vitest run",
     "test:watch": "vitest",
     "lint": "eslint src --fix --max-warnings 0",

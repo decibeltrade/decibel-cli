@@ -20,7 +20,14 @@
 
 import { config } from "dotenv";
 import { runMcpServer } from "./mcp/server.js";
-import { getEnvNetwork, getEnvAccount } from "./utils/config.js";
+import { 
+  getEnvNetwork,
+  getEnvAccountAlias,
+  getEnvPrivateKey,
+  getEnvGasStationApiKey,
+  getEnvNodeApiKey,
+  getEnvSubaccountAddress,
+} from "./utils/config.js";
 
 // Load environment variables
 config();
@@ -32,7 +39,11 @@ config();
 // 3. Default stored account (from `decibel-cli account add`)
 runMcpServer({
   network: getEnvNetwork(),
-  account: getEnvAccount(),
+  accountAlias: getEnvAccountAlias(),
+  subaccountAddress: getEnvSubaccountAddress(),
+  privateKey: getEnvPrivateKey(),
+  nodeApiKey: getEnvNodeApiKey(),
+  gasStationApiKey: getEnvGasStationApiKey(),
 }).catch((error) => {
   console.error("MCP server error:", error);
   process.exit(1);

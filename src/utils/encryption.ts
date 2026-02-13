@@ -90,17 +90,6 @@ export function isValidPrivateKey(key: string): boolean {
 }
 
 /**
- * Normalize private key to standard hex format (0x...)
- * Strips AIP-80 prefix if present
- */
-export function normalizePrivateKey(key: string): string {
-  if (key.startsWith("ed25519-priv-")) {
-    return key.replace("ed25519-priv-", "");
-  }
-  return key;
-}
-
-/**
  * Validate that a string looks like a valid address
  * (hex string starting with 0x, 64 hex characters after prefix)
  */

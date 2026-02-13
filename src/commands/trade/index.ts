@@ -4,9 +4,7 @@ import inquirer from "inquirer";
 import {
   createReadDex,
   createWriteDex,
-  getConfig,
-  resolveAddress,
-  getSubaccountAddress,
+  resolveSubaccountAddress,
   DexOptions,
 } from "../../services/dex-factory.js";
 import {
@@ -94,7 +92,7 @@ export function createTradeCommand(): Command {
 
           const writeDex = await createWriteDex({
             network: options.network,
-            account: options.account,
+            accountAlias: options.account,
           });
 
           // Get market config for decimals and tick size
@@ -181,7 +179,7 @@ export function createTradeCommand(): Command {
 
           const writeDex = await createWriteDex({
             network: options.network,
-            account: options.account,
+            accountAlias: options.account,
           });
 
           // Get current price for market order
@@ -269,12 +267,10 @@ export function createTradeCommand(): Command {
         try {
           const dexOptions: DexOptions = {
             network: options.network,
-            account: options.account,
+            accountAlias: options.account,
           };
 
-          const address = resolveAddress(dexOptions);
-          const config = getConfig(dexOptions);
-          const subaccountAddr = getSubaccountAddress(address, config);
+          const subaccountAddr = resolveSubaccountAddress(dexOptions);
 
           const readDex = createReadDex(dexOptions);
 
@@ -389,7 +385,7 @@ export function createTradeCommand(): Command {
         try {
           const writeDex = await createWriteDex({
             network: options.network,
-            account: options.account,
+            accountAlias: options.account,
           });
 
           const result = await writeDex.cancelOrder({
@@ -425,12 +421,10 @@ export function createTradeCommand(): Command {
       try {
         const dexOptions: DexOptions = {
           network: options.network,
-          account: options.account,
+          accountAlias: options.account,
         };
 
-        const address = resolveAddress(dexOptions);
-        const config = getConfig(dexOptions);
-        const subaccountAddr = getSubaccountAddress(address, config);
+        const subaccountAddr = resolveSubaccountAddress(dexOptions);
 
         const readDex = createReadDex(dexOptions);
         const ordersResponse = await readDex.userOpenOrders.getByAddr({ subAddr: subaccountAddr });
@@ -517,12 +511,14 @@ export function createTradeCommand(): Command {
             process.exit(1);
           }
 
-          const writeDex = await createWriteDex({
+          const dexOptions: DexOptions = {
             network: options.network,
-            account: options.account,
-          });
+            accountAlias: options.account,
+          };
 
-          const readDex = createReadDex({ network: options.network });
+          
+
+          const readDex = createReadDex(dexOptions);
           const markets = await readDex.markets.getAll();
           const market = markets.find(
             (m) => m.market_name.toLowerCase() === symbol.toLowerCase()
@@ -540,11 +536,14 @@ export function createTradeCommand(): Command {
             process.exit(1);
           }
 
+          const writeDex = await createWriteDex(dexOptions);
+          const subaccountAddr = resolveSubaccountAddress(dexOptions);
+
           const isCross = !options.isolated;
 
-          const result = await writeDex.configureUserSettingsForMarket({
+          await writeDex.configureUserSettingsForMarket({
             marketAddr: market.market_addr,
-            subaccountAddr: "", // Will use default
+            subaccountAddr,
             isCross,
             userLeverage: leverageNum,
           });
@@ -575,12 +574,10 @@ export function createTradeCommand(): Command {
       try {
         const dexOptions: DexOptions = {
           network: options.network,
-          account: options.account,
+          accountAlias: options.account,
         };
 
-        const address = resolveAddress(dexOptions);
-        const config = getConfig(dexOptions);
-        const subaccountAddr = getSubaccountAddress(address, config);
+        const subaccountAddr = resolveSubaccountAddress(dexOptions);
 
         const readDex = createReadDex(dexOptions);
 
@@ -626,12 +623,10 @@ export function createTradeCommand(): Command {
       try {
         const dexOptions: DexOptions = {
           network: options.network,
-          account: options.account,
+          accountAlias: options.account,
         };
 
-        const address = resolveAddress(dexOptions);
-        const config = getConfig(dexOptions);
-        const subaccountAddr = getSubaccountAddress(address, config);
+        const subaccountAddr = resolveSubaccountAddress(dexOptions);
 
         const readDex = createReadDex(dexOptions);
 
@@ -674,12 +669,10 @@ export function createTradeCommand(): Command {
       try {
         const dexOptions: DexOptions = {
           network: options.network,
-          account: options.account,
+          accountAlias: options.account,
         };
 
-        const address = resolveAddress(dexOptions);
-        const config = getConfig(dexOptions);
-        const subaccountAddr = getSubaccountAddress(address, config);
+        const subaccountAddr = resolveSubaccountAddress(dexOptions);
 
         const readDex = createReadDex(dexOptions);
         const trades = await readDex.userTradeHistory.getByAddr({

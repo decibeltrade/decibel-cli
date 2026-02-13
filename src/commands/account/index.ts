@@ -4,10 +4,8 @@ import inquirer from "inquirer";
 import {
   addAccount,
   getAllAccounts,
-  getDefaultAccount,
   removeAccount,
   setDefaultAccount,
-  StoredAccount,
 } from "../../storage/accounts.js";
 import {
   createTable,
@@ -18,6 +16,8 @@ import {
   OutputOptions,
 } from "../../utils/output.js";
 import { isValidAddress, isValidPrivateKey } from "../../utils/encryption.js";
+import { createReadDex, getConfig, resolveSubaccountAddress } from "../../services/dex-factory.js";
+import { NetworkName } from "../../utils/config.js";
 
 export function createAccountCommand(): Command {
   const account = new Command("account").description("Manage trading accounts");
@@ -29,6 +29,21 @@ export function createAccountCommand(): Command {
     .action(async () => {
       try {
         const answers = await inquirer.prompt([
+          {
+            type: "input",
+            name: "subaccountAddress",
+            message: "Subaccount address (hex string starting with 0x):",
+            when: (answers) => answers.type === "read-only",
+            validate: (input: string) => {
+              if (!input) {
+                return "Subaccount address is required";
+              }
+              if (!isValidAddress(input)) {
+                return "Invalid address format. Must be a hex string starting with 0x";
+              }
+              return true;
+            },
+          },
           {
             type: "list",
             name: "type",
@@ -46,18 +61,6 @@ export function createAccountCommand(): Command {
             validate: (input: string) => {
               if (!isValidPrivateKey(input)) {
                 return "Invalid private key format. Must be a hex string starting with 0x (64 hex characters)";
-              }
-              return true;
-            },
-          },
-          {
-            type: "input",
-            name: "address",
-            message: "Wallet address (hex string starting with 0x):",
-            when: (answers) => answers.type === "read-only",
-            validate: (input: string) => {
-              if (!isValidAddress(input)) {
-                return "Invalid address format. Must be a hex string starting with 0x";
               }
               return true;
             },
@@ -87,7 +90,7 @@ export function createAccountCommand(): Command {
         const account = await addAccount({
           alias: answers.alias.trim(),
           privateKey: answers.privateKey,
-          address: answers.address,
+          subaccountAddress: answers.subaccountAddress,
           type: answers.type,
           isDefault: answers.isDefault,
         });
@@ -251,15 +254,8 @@ export function createAccountCommand(): Command {
     .option("--network <network>", "Network to use (testnet, netna, local)")
     .action(async (options: OutputOptions & { account?: string; network?: string }) => {
       try {
-        const { createReadDex, getConfig, resolveAddress, getSubaccountAddress } = await import(
-          "../../services/dex-factory.js"
-        );
-
-        const address = resolveAddress({ account: options.account });
-        const config = getConfig({ network: options.network as any });
-        const subaccountAddr = getSubaccountAddress(address, config);
-
-        const readDex = createReadDex({ network: options.network as any });
+        const subaccountAddr = resolveSubaccountAddress({ network: options.network as NetworkName, accountAlias: options.account });
+        const readDex = createReadDex({ network: options.network as NetworkName });
 
         // Fetch account overview
         const overview = await readDex.accountOverview.getByAddr({
@@ -267,9 +263,7 @@ export function createAccountCommand(): Command {
         });
 
         const data = {
-          address,
           subaccountAddress: subaccountAddr,
-          walletBalance: await readDex.usdcBalance(address),
           ...overview,
         };
 
@@ -277,9 +271,7 @@ export function createAccountCommand(): Command {
           data,
           (d) => {
             const table = createTable(["Property", "Value"]);
-            table.push(["Wallet Address", formatAddress(d.address)]);
-            table.push(["Subaccount", formatAddress(d.subaccountAddress)]);
-            table.push(["Wallet USDC", `$${d.walletBalance.toFixed(2)}`]);
+            table.push(["Subaccount Address", formatAddress(d.subaccountAddress)]);
             // perp_equity_balance = account value (collateral + unrealized PnL)
             table.push(["Account Value", `$${Number(d.perp_equity_balance).toFixed(2)}`]);
             table.push(["Unrealized PnL", `$${Number(d.unrealized_pnl).toFixed(2)}`]);
