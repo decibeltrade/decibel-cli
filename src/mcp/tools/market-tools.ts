@@ -43,12 +43,13 @@ export async function getMarkets(dexOptions: DexOptions = {}) {
 
 export async function getPrice(
   params: z.infer<typeof GetPriceSchema>,
-  dexOptions: DexOptions = {}
+  dexOptions: DexOptions = {},
 ) {
   const readDex = createReadDex(dexOptions);
   const prices = await readDex.marketPrices.getByName({ marketName: params.symbol });
   const price = prices[0];
 
+  // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
   if (!price) {
     return { error: `No price data for ${params.symbol}` };
   }
@@ -62,27 +63,28 @@ export async function getPrice(
   };
 }
 
-export async function getOrderbook(
-  params: z.infer<typeof GetOrderbookSchema>,
-  dexOptions: DexOptions = {}
-) {
-  const readDex = createReadDex(dexOptions);
-  const orderbook = await readDex.marketDepth.getByName({
-    marketName: params.symbol,
-    limit: params.depth,
-  });
-
-  // Calculate spread
-  const bestBid = orderbook.bids[0]?.price ?? 0;
-  const bestAsk = orderbook.asks[0]?.price ?? 0;
-  const spread = bestAsk - bestBid;
-  const spreadPct = bestAsk > 0 ? (spread / bestAsk) * 100 : 0;
-
-  return {
-    symbol: params.symbol,
-    bids: orderbook.bids.slice(0, params.depth),
-    asks: orderbook.asks.slice(0, params.depth),
-    spread,
-    spreadPercent: spreadPct,
-  };
-}
+// TODO: either reintroduce the /depth endpoint or fully delete this function
+// export async function getOrderbook(
+//   params: z.infer<typeof GetOrderbookSchema>,
+//   dexOptions: DexOptions = {},
+// ) {
+//   const readDex = createReadDex(dexOptions);
+//   const orderbook = await readDex.marketDepth.getByName({
+//     marketName: params.symbol,
+//     limit: params.depth,
+//   });
+//
+//   // Calculate spread
+//   const bestBid = orderbook.bids[0]?.price ?? 0;
+//   const bestAsk = orderbook.asks[0]?.price ?? 0;
+//   const spread = bestAsk - bestBid;
+//   const spreadPct = bestAsk > 0 ? (spread / bestAsk) * 100 : 0;
+//
+//   return {
+//     symbol: params.symbol,
+//     bids: orderbook.bids.slice(0, params.depth),
+//     asks: orderbook.asks.slice(0, params.depth),
+//     spread,
+//     spreadPercent: spreadPct,
+//   };
+// }

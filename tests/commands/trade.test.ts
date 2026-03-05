@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 // Mock market data
 const mockMarkets = [
@@ -111,7 +111,7 @@ describe("Trade Commands", () => {
         const markets = await mockReadDex.markets.getAll();
         const market = markets.find(
           (m: { market_name: string }) =>
-            m.market_name.toLowerCase() === "unknown/usd".toLowerCase()
+            m.market_name.toLowerCase() === "unknown/usd".toLowerCase(),
         );
         expect(market).toBeUndefined();
       });
@@ -119,8 +119,7 @@ describe("Trade Commands", () => {
       it("should find BTC/USD market", async () => {
         const markets = await mockReadDex.markets.getAll();
         const market = markets.find(
-          (m: { market_name: string }) =>
-            m.market_name.toLowerCase() === "btc/usd".toLowerCase()
+          (m: { market_name: string }) => m.market_name.toLowerCase() === "btc/usd".toLowerCase(),
         );
         expect(market).toBeDefined();
         expect(market?.market_name).toBe("BTC/USD");
@@ -129,8 +128,7 @@ describe("Trade Commands", () => {
       it("should be case-insensitive for market lookup", async () => {
         const markets = await mockReadDex.markets.getAll();
         const market = markets.find(
-          (m: { market_name: string }) =>
-            m.market_name.toLowerCase() === "BTC/USD".toLowerCase()
+          (m: { market_name: string }) => m.market_name.toLowerCase() === "BTC/USD".toLowerCase(),
         );
         expect(market).toBeDefined();
       });
@@ -300,9 +298,7 @@ describe("Trade Commands", () => {
       const currentPrice = 95000;
       const slippage = 0.01; // 1%
       const isBuy = true;
-      const limitPrice = isBuy
-        ? currentPrice * (1 + slippage)
-        : currentPrice * (1 - slippage);
+      const limitPrice = isBuy ? currentPrice * (1 + slippage) : currentPrice * (1 - slippage);
       expect(limitPrice).toBe(95950); // 95000 * 1.01 = 95950
     });
 
@@ -310,9 +306,7 @@ describe("Trade Commands", () => {
       const currentPrice = 95000;
       const slippage = 0.01; // 1%
       const isBuy = false;
-      const limitPrice = isBuy
-        ? currentPrice * (1 + slippage)
-        : currentPrice * (1 - slippage);
+      const limitPrice = isBuy ? currentPrice * (1 + slippage) : currentPrice * (1 - slippage);
       expect(limitPrice).toBe(94050); // 95000 * 0.99 = 94050
     });
 

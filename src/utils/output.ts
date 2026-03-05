@@ -11,7 +11,7 @@ export interface OutputOptions {
 export function formatOutput<T>(
   data: T,
   tableFormatter: (data: T) => void,
-  options: OutputOptions
+  options: OutputOptions,
 ): void {
   if (options.json) {
     console.log(JSON.stringify(data, null, 2));
@@ -23,10 +23,7 @@ export function formatOutput<T>(
 /**
  * Create a styled table with consistent formatting
  */
-export function createTable(
-  headers: string[],
-  options: { compact?: boolean } = {}
-): Table.Table {
+export function createTable(headers: string[], options: { compact?: boolean } = {}): Table.Table {
   return new Table({
     head: headers.map((h) => chalk.cyan(h)),
     style: {
@@ -61,8 +58,8 @@ export function createTable(
  */
 export function formatNumber(
   value: number,
-  decimals: number = 2,
-  options: { showSign?: boolean } = {}
+  decimals = 2,
+  options: { showSign?: boolean } = {},
 ): string {
   const formatted = value.toFixed(decimals);
   if (options.showSign && value > 0) {
@@ -74,14 +71,14 @@ export function formatNumber(
 /**
  * Format price with $ prefix
  */
-export function formatPrice(value: number, decimals: number = 2): string {
+export function formatPrice(value: number, decimals = 2): string {
   return `$${formatNumber(value, decimals)}`;
 }
 
 /**
  * Format PnL with color coding
  */
-export function formatPnL(value: number, decimals: number = 2): string {
+export function formatPnL(value: number, decimals = 2): string {
   const formatted = formatNumber(value, decimals, { showSign: true });
   if (value > 0) {
     return chalk.green(formatted);
@@ -94,7 +91,7 @@ export function formatPnL(value: number, decimals: number = 2): string {
 /**
  * Format percentage
  */
-export function formatPercent(value: number, decimals: number = 2): string {
+export function formatPercent(value: number, decimals = 2): string {
   return `${formatNumber(value * 100, decimals)}%`;
 }
 
@@ -112,7 +109,7 @@ export function formatSide(side: string): string {
 /**
  * Format address (truncated)
  */
-export function formatAddress(address: string, chars: number = 6): string {
+export function formatAddress(address: string, chars = 6): string {
   if (address.length <= chars * 2 + 3) {
     return address;
   }
@@ -158,12 +155,7 @@ export function formatTimestamp(timestamp: number | string | Date): string {
 /**
  * Create depth visualization bar for orderbook
  */
-export function createDepthBar(
-  size: number,
-  maxSize: number,
-  width: number = 20,
-  isBid: boolean = true
-): string {
+export function createDepthBar(size: number, maxSize: number, width = 20, isBid = true): string {
   const filledWidth = Math.round((size / maxSize) * width);
   const emptyWidth = width - filledWidth;
 

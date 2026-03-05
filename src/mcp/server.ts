@@ -41,30 +41,27 @@ import {
 } from "@modelcontextprotocol/sdk/types.js";
 
 import { DexOptions } from "../services/dex-factory.js";
-
+import { getBalances } from "./tools/account-tools.js";
+import {
+  getMarkets,
+  // getOrderbook,
+  // GetOrderbookSchema,
+  getPrice,
+  GetPriceSchema,
+} from "./tools/market-tools.js";
 // Import tool implementations
 import {
+  cancelOrder,
+  CancelOrderSchema,
+  getOpenOrders,
+  getPositions,
   placeLimitOrder,
   PlaceLimitOrderSchema,
   placeMarketOrder,
   PlaceMarketOrderSchema,
-  cancelOrder,
-  CancelOrderSchema,
   setLeverage,
   SetLeverageSchema,
-  getPositions,
-  getOpenOrders,
 } from "./tools/trading-tools.js";
-
-import {
-  getMarkets,
-  getPrice,
-  GetPriceSchema,
-  getOrderbook,
-  GetOrderbookSchema,
-} from "./tools/market-tools.js";
-
-import { getBalances } from "./tools/account-tools.js";
 
 // Define available tools
 const TOOLS: Tool[] = [
@@ -203,8 +200,7 @@ const TOOLS: Tool[] = [
   // Market tools
   {
     name: "get_markets",
-    description:
-      "List all available markets on Decibel DEX with their configurations.",
+    description: "List all available markets on Decibel DEX with their configurations.",
     inputSchema: {
       type: "object",
       properties: {},
@@ -212,8 +208,7 @@ const TOOLS: Tool[] = [
   },
   {
     name: "get_price",
-    description:
-      "Get current price, funding rate, and open interest for a market.",
+    description: "Get current price, funding rate, and open interest for a market.",
     inputSchema: {
       type: "object",
       properties: {
@@ -254,37 +249,10 @@ const TOOLS: Tool[] = [
       properties: {},
     },
   },
-  {
-    name: "deposit",
-    description: "Deposit USDC from wallet to trading account.",
-    inputSchema: {
-      type: "object",
-      properties: {
-        amount: {
-          type: "number",
-          description: "Amount of USDC to deposit",
-        },
-      },
-      required: ["amount"],
-    },
-  },
-  {
-    name: "withdraw",
-    description: "Withdraw USDC from trading account to wallet.",
-    inputSchema: {
-      type: "object",
-      properties: {
-        amount: {
-          type: "number",
-          description: "Amount of USDC to withdraw",
-        },
-      },
-      required: ["amount"],
-    },
-  },
 ];
 
-export async function createMcpServer(dexOptions: DexOptions = {}) {
+export function createMcpServer(dexOptions: DexOptions = {}) {
+  // eslint-disable-next-line @typescript-eslint/no-deprecated
   const server = new Server(
     {
       name: "decibel-cli",
@@ -298,7 +266,7 @@ export async function createMcpServer(dexOptions: DexOptions = {}) {
   );
 
   // Handle list tools request
-  server.setRequestHandler(ListToolsRequestSchema, async () => {
+  server.setRequestHandler(ListToolsRequestSchema, () => {
     return { tools: TOOLS };
   });
 
@@ -312,16 +280,10 @@ export async function createMcpServer(dexOptions: DexOptions = {}) {
       switch (name) {
         // Trading tools
         case "place_limit_order":
-          result = await placeLimitOrder(
-            PlaceLimitOrderSchema.parse(args),
-            dexOptions,
-          );
+          result = await placeLimitOrder(PlaceLimitOrderSchema.parse(args), dexOptions);
           break;
         case "place_market_order":
-          result = await placeMarketOrder(
-            PlaceMarketOrderSchema.parse(args),
-            dexOptions,
-          );
+          result = await placeMarketOrder(PlaceMarketOrderSchema.parse(args), dexOptions);
           break;
         case "cancel_order":
           result = await cancelOrder(CancelOrderSchema.parse(args), dexOptions);
@@ -343,12 +305,10 @@ export async function createMcpServer(dexOptions: DexOptions = {}) {
         case "get_price":
           result = await getPrice(GetPriceSchema.parse(args), dexOptions);
           break;
-        case "get_orderbook":
-          result = await getOrderbook(
-            GetOrderbookSchema.parse(args),
-            dexOptions,
-          );
-          break;
+        // TODO: either reintroduce the /depth endpoint or fully delete this case
+        // case "get_orderbook":
+        //   result = await getOrderbook(GetOrderbookSchema.parse(args), dexOptions);
+        //   break;
 
         // Account tools
         case "get_balances":
@@ -385,7 +345,7 @@ export async function createMcpServer(dexOptions: DexOptions = {}) {
 }
 
 export async function runMcpServer(dexOptions: DexOptions = {}) {
-  const server = await createMcpServer(dexOptions);
+  const server = createMcpServer(dexOptions);
   const transport = new StdioServerTransport();
 
   await server.connect(transport);

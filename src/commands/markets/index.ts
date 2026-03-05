@@ -1,16 +1,16 @@
 import { Command } from "commander";
 
 import { createReadDex } from "../../services/dex-factory.js";
+import { NetworkName } from "../../utils/config.js";
 import {
+  createDepthBar,
   createTable,
+  formatNumber,
   formatOutput,
   formatPrice,
-  formatNumber,
-  printError,
-  createDepthBar,
   OutputOptions,
+  printError,
 } from "../../utils/output.js";
-import { NetworkName } from "../../utils/config.js";
 
 interface MarketCommandOptions extends OutputOptions {
   network?: NetworkName;
@@ -46,13 +46,7 @@ export function createMarketsCommand(): Command {
         formatOutput(
           data,
           (markets) => {
-            const table = createTable([
-              "Market",
-              "Max Leverage",
-              "Tick Size",
-              "Min Size",
-              "Mode",
-            ]);
+            const table = createTable(["Market", "Max Leverage", "Tick Size", "Min Size", "Mode"]);
             for (const m of markets) {
               table.push([
                 m.name,
@@ -64,7 +58,7 @@ export function createMarketsCommand(): Command {
             }
             console.log(table.toString());
           },
-          options
+          options,
         );
       } catch (error) {
         printError(error instanceof Error ? error.message : String(error));
@@ -101,11 +95,13 @@ export function createMarketsCommand(): Command {
           });
 
           // Keep the process running
+          // eslint-disable-next-line @typescript-eslint/no-empty-function
           await new Promise(() => {});
         } else {
           const prices = await readDex.marketPrices.getByName({ marketName: symbol });
           const price = prices[0];
 
+          // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
           if (!price) {
             printError(`No price data found for ${symbol}`);
             process.exit(1);
@@ -130,7 +126,7 @@ export function createMarketsCommand(): Command {
               table.push(["Open Interest", formatNumber(d.openInterest, 2)]);
               console.log(table.toString());
             },
-            options
+            options,
           );
         }
       } catch (error) {
@@ -159,7 +155,7 @@ export function createMarketsCommand(): Command {
             // Clear screen and redraw
             console.clear();
             console.log(`${symbol} Order Book - ${new Date().toLocaleTimeString()}\n`);
-            renderOrderbook(data.asks.slice(0, depth), data.bids.slice(0, depth), depth);
+            renderOrderbook(data.asks.slice(0, depth), data.bids.slice(0, depth));
           });
 
           process.on("SIGINT", () => {
@@ -168,19 +164,24 @@ export function createMarketsCommand(): Command {
             process.exit(0);
           });
 
+          // eslint-disable-next-line @typescript-eslint/no-empty-function
           await new Promise(() => {});
         } else {
-          const orderbook = await readDex.marketDepth.getByName({
-            marketName: symbol,
-            limit: depth,
-          });
-
-          if (options.json) {
-            console.log(JSON.stringify(orderbook, null, 2));
-          } else {
-            console.log(`${symbol} Order Book\n`);
-            renderOrderbook(orderbook.asks.slice(0, depth), orderbook.bids.slice(0, depth), depth);
-          }
+          // TODO: either reintroduce the /depth endpoint or fully delete this branch
+          // const orderbook = await readDex.marketDepth.getByName({
+          //   marketName: symbol,
+          //   limit: depth,
+          // });
+          //
+          // if (options.json) {
+          //   console.log(JSON.stringify(orderbook, null, 2));
+          // } else {
+          //   console.log(`${symbol} Order Book\n`);
+          //   renderOrderbook(orderbook.asks.slice(0, depth), orderbook.bids.slice(0, depth));
+          // }
+          console.log(
+            "The REST /depth endpoint is currently unavailable. Use --watch for real-time depth via WebSocket.",
+          );
         }
       } catch (error) {
         printError(error instanceof Error ? error.message : String(error));
@@ -194,7 +195,6 @@ export function createMarketsCommand(): Command {
 function renderOrderbook(
   asks: Array<{ price: number; size: number }>,
   bids: Array<{ price: number; size: number }>,
-  depth: number
 ): void {
   const maxAskSize = Math.max(...asks.map((a) => a.size), 0.001);
   const maxBidSize = Math.max(...bids.map((b) => b.size), 0.001);
@@ -209,7 +209,7 @@ function renderOrderbook(
   for (const ask of sortedAsks) {
     const depthBar = createDepthBar(ask.size, maxSize, 20, false);
     console.log(
-      `  \x1b[31m${formatNumber(ask.price, 2).padStart(12)}\x1b[0m  ${formatNumber(ask.size, 4).padStart(10)}  ${depthBar}`
+      `  \x1b[31m${formatNumber(ask.price, 2).padStart(12)}\x1b[0m  ${formatNumber(ask.size, 4).padStart(10)}  ${depthBar}`,
     );
   }
 
@@ -227,7 +227,7 @@ function renderOrderbook(
   for (const bid of sortedBids) {
     const depthBar = createDepthBar(bid.size, maxSize, 20, true);
     console.log(
-      `  \x1b[32m${formatNumber(bid.price, 2).padStart(12)}\x1b[0m  ${formatNumber(bid.size, 4).padStart(10)}  ${depthBar}`
+      `  \x1b[32m${formatNumber(bid.price, 2).padStart(12)}\x1b[0m  ${formatNumber(bid.size, 4).padStart(10)}  ${depthBar}`,
     );
   }
 }

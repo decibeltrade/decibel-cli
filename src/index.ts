@@ -19,13 +19,14 @@
 import { Command } from "commander";
 import { config } from "dotenv";
 
-// Load environment variables from .env file
-config();
-
 // Import command modules
 import { createAccountCommand } from "./commands/account/index.js";
+import { createAffiliateCommand } from "./commands/affiliate/index.js";
 import { createMarketsCommand } from "./commands/markets/index.js";
 import { createTradeCommand } from "./commands/trade/index.js";
+
+// Load environment variables from .env file
+config();
 
 // Create the main program
 const program = new Command();
@@ -34,23 +35,17 @@ program
   .name("decibel-cli")
   .description("Command-line interface for trading on Decibel DEX")
   .version("1.0.0")
-  .option(
-    "--network <network>",
-    "Network to use (testnet, netna, local)",
-    "testnet",
-  );
+  .option("--network <network>", "Network to use (testnet, netna, local)", "testnet");
 
 // Add command groups
 program.addCommand(createAccountCommand());
+program.addCommand(createAffiliateCommand());
 program.addCommand(createMarketsCommand());
 program.addCommand(createTradeCommand());
 
 // Global error handler for unhandled promise rejections
 process.on("unhandledRejection", (reason) => {
-  console.error(
-    "Error:",
-    reason instanceof Error ? reason.message : String(reason),
-  );
+  console.error("Error:", reason instanceof Error ? reason.message : String(reason));
   process.exit(1);
 });
 

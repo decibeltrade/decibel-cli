@@ -1,54 +1,28 @@
 {
-  "name": "decibel-cli",
-  "version": "1.0.0",
-  "description": "Command-line interface for trading on Decibel DEX",
-  "type": "module",
   "bin": {
     "decibel-cli": "./dist/index.js"
-  },
-  "main": "dist/index.js",
-  "types": "dist/index.d.ts",
-  "repository": {
-    "type": "git",
-    "url": "git@github.com:decibeltrade/decibel-cli.git"
-  },
-  "keywords": [
-    "decibel",
-    "dex",
-    "trading",
-    "cli",
-    "aptos",
-    "perpetuals"
-  ],
-  "author": "Decibel Trade",
-  "license": "MIT",
-  "scripts": {
-    "build": "tsc",
-    "dev": "tsc --watch",
-    "start": "tsx dist/index.js",
-    "start:mcp": "tsx dist/mcp-server.js",
-    "test": "vitest run",
-    "test:watch": "vitest",
-    "lint": "eslint src --fix --max-warnings 0",
-    "lint:check": "eslint src --max-warnings 0",
-    "prepublishOnly": "npm run build"
   },
   "dependencies": {
     "@aptos-labs/gas-station-client": "^2.0.3",
     "@aptos-labs/ts-sdk": "^5.2.1",
-    "@decibeltrade/sdk": "^0.3.1",
+    "@clickhouse/client": "^1.17.0",
+    "@decibeltrade/sdk": "0.4.1",
     "@modelcontextprotocol/sdk": "^1.0.0",
     "better-sqlite3": "^11.0.0",
     "chalk": "^5.3.0",
     "cli-table3": "^0.6.5",
     "commander": "^12.1.0",
     "dotenv": "^16.4.5",
+    "ethers": "^6.0.0",
     "inquirer": "^9.2.23",
     "isomorphic-ws": "^5.0.0",
     "ws": "^8.18.1",
     "zod": "^3.25.62"
   },
+  "description": "Command-line interface for trading on Decibel",
   "devDependencies": {
+    "@decibeltrade/eslint-config": "1.0.0",
+    "@decibeltrade/tsconfig": "1.0.1",
     "@types/better-sqlite3": "^7.6.11",
     "@types/inquirer": "^9.0.7",
     "@types/node": "^22.0.0",
@@ -56,9 +30,38 @@
     "eslint": "^9.28.0",
     "tsx": "^4.21.0",
     "typescript": "^5.9.3",
+    "typescript-eslint": "^8.46.2",
     "vitest": "^4.0.18"
   },
   "engines": {
     "node": ">=22.0.0"
-  }
+  },
+  "main": "dist/index.js",
+  "name": "@decibeltrade/cli",
+  "pnpm": {
+    "onlyBuiltDependencies": [
+      "better-sqlite3"
+    ]
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git@github.com:decibeltrade/decibel-cli.git"
+  },
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsc --watch",
+    "lint": "eslint src --fix --max-warnings 0",
+    "lint:check": "eslint src --max-warnings 0",
+    "prepublishOnly": "pnpm build",
+    "start": "tsx dist/index.js",
+    "start:mcp": "tsx dist/mcp-server.js",
+    "test": "vitest run",
+    "test:watch": "vitest"
+  },
+  "type": "module",
+  "types": "dist/index.d.ts",
+  "version": "0.1.0"
 }

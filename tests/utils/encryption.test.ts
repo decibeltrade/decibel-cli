@@ -1,10 +1,10 @@
-import { describe, it, expect } from "vitest";
+import { describe, expect, it } from "vitest";
 
 import {
-  encryptPrivateKey,
   decryptPrivateKey,
-  isValidPrivateKey,
+  encryptPrivateKey,
   isValidAddress,
+  isValidPrivateKey,
 } from "../../src/utils/encryption.js";
 
 describe("encryption utilities", () => {
@@ -102,9 +102,7 @@ describe("encryption utilities", () => {
     it("should fail decryption with wrong password", async () => {
       const encrypted = await encryptPrivateKey(testPrivateKey, testPassword);
 
-      await expect(
-        decryptPrivateKey(encrypted, "wrong-password")
-      ).rejects.toThrow();
+      await expect(decryptPrivateKey(encrypted, "wrong-password")).rejects.toThrow();
     });
 
     it("should handle empty password", async () => {

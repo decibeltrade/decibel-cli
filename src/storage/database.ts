@@ -1,6 +1,5 @@
 import Database from "better-sqlite3";
 import { existsSync, mkdirSync } from "fs";
-import { dirname } from "path";
 
 import { DATABASE_PATH, DECIBEL_DIR } from "../utils/config.js";
 
@@ -78,7 +77,7 @@ export function closeDatabase(): void {
 export function runMigration(
   database: Database.Database,
   version: number,
-  migration: () => void
+  migration: () => void,
 ): void {
   const currentVersion = database
     .prepare("SELECT value FROM settings WHERE key = 'db_version'")
@@ -90,7 +89,7 @@ export function runMigration(
     migration();
     database
       .prepare(
-        "INSERT OR REPLACE INTO settings (key, value, updated_at) VALUES ('db_version', ?, datetime('now'))"
+        "INSERT OR REPLACE INTO settings (key, value, updated_at) VALUES ('db_version', ?, datetime('now'))",
       )
       .run(version.toString());
   }

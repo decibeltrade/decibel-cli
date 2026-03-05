@@ -1,31 +1,47 @@
+import { TimeInForce } from "@decibeltrade/sdk";
 import { Command } from "commander";
 import inquirer from "inquirer";
 
 import {
   createReadDex,
   createWriteDex,
-  resolveSubaccountAddress,
   DexOptions,
+  resolveSubaccountAddress,
 } from "../../services/dex-factory.js";
+import { NetworkName } from "../../utils/config.js";
 import {
   createTable,
-  formatOutput,
-  formatPrice,
-  formatNumber,
-  formatPnL,
-  formatSide,
   formatAddress,
+  formatNumber,
+  formatOutput,
+  formatPnL,
+  formatPrice,
+  formatSide,
+  OutputOptions,
   printError,
   printSuccess,
-  OutputOptions,
 } from "../../utils/output.js";
-import { NetworkName } from "../../utils/config.js";
-import { TimeInForce } from "@decibeltrade/sdk";
 
 interface TradeCommandOptions extends OutputOptions {
   network?: NetworkName;
   account?: string;
   watch?: boolean;
+}
+
+/**
+ * Validate and parse the side parameter
+ * @returns true for buy/long, false for sell/short
+ * @throws Error if invalid side
+ */
+function validateSide(side: string): boolean {
+  const lowerSide = side.toLowerCase();
+  if (["buy", "long"].includes(lowerSide)) {
+    return true;
+  }
+  if (["sell", "short"].includes(lowerSide)) {
+    return false;
+  }
+  throw new Error(`Invalid side: "${side}". Must be one of: buy, long, sell, short`);
 }
 
 export function createTradeCommand(): Command {
@@ -54,10 +70,11 @@ export function createTradeCommand(): Command {
           tif?: string;
           reduceOnly?: boolean;
           clientId?: string;
-        }
+        },
       ) => {
         try {
-          const isBuy = ["buy", "long"].includes(side.toLowerCase());
+          const isBuy = validateSide(side);
+
           const sizeNum = parseFloat(size);
           const priceNum = parseFloat(price);
 
@@ -98,9 +115,7 @@ export function createTradeCommand(): Command {
           // Get market config for decimals and tick size
           const readDex = createReadDex({ network: options.network });
           const markets = await readDex.markets.getAll();
-          const market = markets.find(
-            (m) => m.market_name.toLowerCase() === symbol.toLowerCase()
-          );
+          const market = markets.find((m) => m.market_name.toLowerCase() === symbol.toLowerCase());
 
           if (!market) {
             printError(`Market "${symbol}" not found`);
@@ -133,7 +148,7 @@ export function createTradeCommand(): Command {
                 printError(`Order failed: ${r.error}`);
               }
             },
-            options
+            options,
           );
 
           if (!result.success) {
@@ -143,7 +158,7 @@ export function createTradeCommand(): Command {
           printError(error instanceof Error ? error.message : String(error));
           process.exit(1);
         }
-      }
+      },
     );
 
   // Place market order
@@ -165,10 +180,11 @@ export function createTradeCommand(): Command {
           reduceOnly?: boolean;
           slippage?: string;
           clientId?: string;
-        }
+        },
       ) => {
         try {
-          const isBuy = ["buy", "long"].includes(side.toLowerCase());
+          const isBuy = validateSide(side);
+
           const sizeNum = parseFloat(size);
           const slippage = parseFloat(options.slippage || "1") / 100;
 
@@ -194,9 +210,7 @@ export function createTradeCommand(): Command {
 
           // Get market config for decimals and tick size
           const markets = await readDex.markets.getAll();
-          const market = markets.find(
-            (m) => m.market_name.toLowerCase() === symbol.toLowerCase()
-          );
+          const market = markets.find((m) => m.market_name.toLowerCase() === symbol.toLowerCase());
 
           if (!market) {
             printError(`Market "${symbol}" not found`);
@@ -204,9 +218,7 @@ export function createTradeCommand(): Command {
           }
 
           // Calculate limit price with slippage for market order
-          const limitPrice = isBuy
-            ? currentPrice * (1 + slippage)
-            : currentPrice * (1 - slippage);
+          const limitPrice = isBuy ? currentPrice * (1 + slippage) : currentPrice * (1 - slippage);
 
           // Convert human-readable values to chain units
           const chainPrice = Math.round(limitPrice * 10 ** market.px_decimals);
@@ -234,7 +246,7 @@ export function createTradeCommand(): Command {
                 printError(`Order failed: ${r.error}`);
               }
             },
-            options
+            options,
           );
 
           if (!result.success) {
@@ -244,7 +256,7 @@ export function createTradeCommand(): Command {
           printError(error instanceof Error ? error.message : String(error));
           process.exit(1);
         }
-      }
+      },
     );
 
   // Close position
@@ -262,7 +274,7 @@ export function createTradeCommand(): Command {
         options: TradeCommandOptions & {
           slippage?: string;
           size?: string;
-        }
+        },
       ) => {
         try {
           const dexOptions: DexOptions = {
@@ -283,9 +295,7 @@ export function createTradeCommand(): Command {
           // Find position for this market
           // Get markets to map address to name
           const markets = await readDex.markets.getAll();
-          const market = markets.find(
-            (m) => m.market_name.toLowerCase() === symbol.toLowerCase()
-          );
+          const market = markets.find((m) => m.market_name.toLowerCase() === symbol.toLowerCase());
 
           if (!market) {
             printError(`Market "${symbol}" not found`);
@@ -293,7 +303,7 @@ export function createTradeCommand(): Command {
           }
 
           const position = positions.find(
-            (p) => p.market.toLowerCase() === market.market_addr.toLowerCase()
+            (p) => p.market.toLowerCase() === market.market_addr.toLowerCase(),
           );
 
           if (!position || position.size === 0) {
@@ -323,15 +333,13 @@ export function createTradeCommand(): Command {
 
           // To close a long, we sell (isBuy=false). To close a short, we buy (isBuy=true).
           const isBuy = !isLong;
-          const limitPrice = isBuy
-            ? currentPrice * (1 + slippage)
-            : currentPrice * (1 - slippage);
+          const limitPrice = isBuy ? currentPrice * (1 + slippage) : currentPrice * (1 - slippage);
 
           const chainPrice = Math.round(limitPrice * 10 ** market.px_decimals);
           const chainSize = Math.round(closeSize * 10 ** market.sz_decimals);
 
           console.log(
-            `Closing ${isLong ? "LONG" : "SHORT"} position: ${closeSize} ${symbol} at ~${formatPrice(limitPrice)}`
+            `Closing ${isLong ? "LONG" : "SHORT"} position: ${closeSize} ${symbol} at ~${formatPrice(limitPrice)}`,
           );
 
           const writeDex = await createWriteDex(dexOptions);
@@ -356,7 +364,7 @@ export function createTradeCommand(): Command {
                 printError(`Close failed: ${r.error}`);
               }
             },
-            options
+            options,
           );
 
           if (!result.success) {
@@ -366,7 +374,7 @@ export function createTradeCommand(): Command {
           printError(error instanceof Error ? error.message : String(error));
           process.exit(1);
         }
-      }
+      },
     );
 
   // Cancel order
@@ -377,36 +385,31 @@ export function createTradeCommand(): Command {
     .option("--json", "Output in JSON format")
     .option("--network <network>", "Network to use (testnet, netna, local)")
     .option("--account <alias>", "Use specific account")
-    .action(
-      async (
-        orderId: string,
-        options: TradeCommandOptions & { market: string }
-      ) => {
-        try {
-          const writeDex = await createWriteDex({
-            network: options.network,
-            accountAlias: options.account,
-          });
+    .action(async (orderId: string, options: TradeCommandOptions & { market: string }) => {
+      try {
+        const writeDex = await createWriteDex({
+          network: options.network,
+          accountAlias: options.account,
+        });
 
-          const result = await writeDex.cancelOrder({
-            orderId,
-            marketName: options.market,
-          });
+        const result = await writeDex.cancelOrder({
+          orderId,
+          marketName: options.market,
+        });
 
-          formatOutput(
-            { success: true, transactionHash: result.hash },
-            (r) => {
-              printSuccess(`Order ${orderId} cancelled`);
-              console.log(`Transaction: ${r.transactionHash}`);
-            },
-            options
-          );
-        } catch (error) {
-          printError(error instanceof Error ? error.message : String(error));
-          process.exit(1);
-        }
+        formatOutput(
+          { success: true, transactionHash: result.hash },
+          (r) => {
+            printSuccess(`Order ${orderId} cancelled`);
+            console.log(`Transaction: ${r.transactionHash}`);
+          },
+          options,
+        );
+      } catch (error) {
+        printError(error instanceof Error ? error.message : String(error));
+        process.exit(1);
       }
-    );
+    });
 
   // Cancel all orders
   trade
@@ -431,8 +434,20 @@ export function createTradeCommand(): Command {
         let orders = ordersResponse.items;
 
         if (options.market) {
+          // Get markets to resolve symbol to address
+          const markets = await readDex.markets.getAll();
+          const market = markets.find(
+            (m) => m.market_name.toLowerCase() === options.market?.toLowerCase(),
+          );
+
+          if (!market) {
+            printError(`Market "${options.market}" not found`);
+            process.exit(1);
+          }
+
+          // Filter by market address
           orders = orders.filter(
-            (o) => o.market.toLowerCase() === options.market!.toLowerCase()
+            (o) => o.market.toLowerCase() === market.market_addr.toLowerCase(),
           );
         }
 
@@ -442,14 +457,14 @@ export function createTradeCommand(): Command {
         }
 
         if (!options.yes) {
-          const confirm = await inquirer.prompt([
+          const confirm = (await inquirer.prompt([
             {
               type: "confirm",
               name: "confirm",
               message: `Cancel ${orders.length} order(s)?`,
               default: false,
             },
-          ]);
+          ])) as { confirm: boolean };
           if (!confirm.confirm) {
             console.log("Cancelled");
             return;
@@ -481,7 +496,7 @@ export function createTradeCommand(): Command {
               printError(`Failed to cancel ${r.failed} order(s)`);
             }
           },
-          options
+          options,
         );
       } catch (error) {
         printError(error instanceof Error ? error.message : String(error));
@@ -502,7 +517,7 @@ export function createTradeCommand(): Command {
       async (
         symbol: string,
         leverage: string,
-        options: TradeCommandOptions & { cross?: boolean; isolated?: boolean }
+        options: TradeCommandOptions & { cross?: boolean; isolated?: boolean },
       ) => {
         try {
           const leverageNum = parseInt(leverage, 10);
@@ -516,13 +531,9 @@ export function createTradeCommand(): Command {
             accountAlias: options.account,
           };
 
-          
-
           const readDex = createReadDex(dexOptions);
           const markets = await readDex.markets.getAll();
-          const market = markets.find(
-            (m) => m.market_name.toLowerCase() === symbol.toLowerCase()
-          );
+          const market = markets.find((m) => m.market_name.toLowerCase() === symbol.toLowerCase());
 
           if (!market) {
             printError(`Market ${symbol} not found`);
@@ -531,7 +542,7 @@ export function createTradeCommand(): Command {
 
           if (leverageNum > market.max_leverage) {
             printError(
-              `Leverage ${leverageNum}x exceeds maximum ${market.max_leverage}x for ${symbol}`
+              `Leverage ${leverageNum}x exceeds maximum ${market.max_leverage}x for ${symbol}`,
             );
             process.exit(1);
           }
@@ -553,13 +564,13 @@ export function createTradeCommand(): Command {
             (r) => {
               printSuccess(`Leverage set to ${r.leverage}x (${r.type}) for ${r.symbol}`);
             },
-            options
+            options,
           );
         } catch (error) {
           printError(error instanceof Error ? error.message : String(error));
           process.exit(1);
         }
-      }
+      },
     );
 
   // View positions
@@ -587,7 +598,7 @@ export function createTradeCommand(): Command {
           const unsubscribe = readDex.userPositions.subscribeByAddr(subaccountAddr, (data) => {
             console.clear();
             console.log(`Positions - ${new Date().toLocaleTimeString()}\n`);
-            renderPositions(data.positions, options);
+            renderPositions(data.positions);
           });
 
           process.on("SIGINT", () => {
@@ -596,6 +607,7 @@ export function createTradeCommand(): Command {
             process.exit(0);
           });
 
+          // eslint-disable-next-line @typescript-eslint/no-empty-function
           await new Promise(() => {});
         } else {
           const positions = await readDex.userPositions.getByAddr({
@@ -603,7 +615,7 @@ export function createTradeCommand(): Command {
             limit: 100,
           });
 
-          formatOutput(positions, (pos) => renderPositions(pos, options), options);
+          formatOutput(positions, (pos) => renderPositions(pos), options);
         }
       } catch (error) {
         printError(error instanceof Error ? error.message : String(error));
@@ -636,7 +648,7 @@ export function createTradeCommand(): Command {
           const unsubscribe = readDex.userOpenOrders.subscribeByAddr(subaccountAddr, (data) => {
             console.clear();
             console.log(`Open Orders - ${new Date().toLocaleTimeString()}\n`);
-            renderOrders(data.orders, options);
+            renderOrders(data.orders);
           });
 
           process.on("SIGINT", () => {
@@ -645,11 +657,14 @@ export function createTradeCommand(): Command {
             process.exit(0);
           });
 
+          // eslint-disable-next-line @typescript-eslint/no-empty-function
           await new Promise(() => {});
         } else {
-          const ordersResponse = await readDex.userOpenOrders.getByAddr({ subAddr: subaccountAddr });
+          const ordersResponse = await readDex.userOpenOrders.getByAddr({
+            subAddr: subaccountAddr,
+          });
 
-          formatOutput(ordersResponse.items, (ord) => renderOrders(ord, options), options);
+          formatOutput(ordersResponse.items, (ord) => renderOrders(ord), options);
         }
       } catch (error) {
         printError(error instanceof Error ? error.message : String(error));
@@ -688,15 +703,7 @@ export function createTradeCommand(): Command {
               return;
             }
 
-            const table = createTable([
-              "Time",
-              "Market",
-              "Action",
-              "Size",
-              "Price",
-              "Fee",
-              "PnL",
-            ]);
+            const table = createTable(["Time", "Market", "Action", "Size", "Price", "Fee", "PnL"]);
 
             for (const t of tradeList) {
               table.push([
@@ -711,7 +718,7 @@ export function createTradeCommand(): Command {
             }
             console.log(table.toString());
           },
-          options
+          options,
         );
       } catch (error) {
         printError(error instanceof Error ? error.message : String(error));
@@ -722,7 +729,29 @@ export function createTradeCommand(): Command {
   return trade;
 }
 
-function renderPositions(positions: any[], options: OutputOptions): void {
+interface Position {
+  market?: string;
+  market_name?: string;
+  size: number;
+  entry_price: number;
+  mark_price?: number;
+  unrealized_pnl?: number;
+  leverage?: number;
+  liquidation_price?: number;
+}
+
+interface Order {
+  order_id: string;
+  market: string;
+  is_buy: boolean;
+  remaining_size?: number | null;
+  price?: number | null;
+  orig_size?: number | null;
+  order_type?: string;
+  details?: string;
+}
+
+function renderPositions(positions: Position[]): void {
   if (positions.length === 0) {
     console.log("No open positions");
     return;
@@ -742,7 +771,7 @@ function renderPositions(positions: any[], options: OutputOptions): void {
   for (const p of positions) {
     const isLong = p.size > 0;
     table.push([
-      p.market_name,
+      p.market_name || p.market || "Unknown",
       formatSide(isLong ? "long" : "short"),
       formatNumber(Math.abs(p.size), 4),
       formatPrice(p.entry_price),
@@ -755,22 +784,13 @@ function renderPositions(positions: any[], options: OutputOptions): void {
   console.log(table.toString());
 }
 
-function renderOrders(orders: any[], options: OutputOptions): void {
+function renderOrders(orders: Order[]): void {
   if (orders.length === 0) {
     console.log("No open orders");
     return;
   }
 
-  const table = createTable([
-    "ID",
-    "Market",
-    "Side",
-    "Size",
-    "Price",
-    "Filled",
-    "Type",
-    "Status",
-  ]);
+  const table = createTable(["ID", "Market", "Side", "Size", "Price", "Filled", "Type", "Status"]);
 
   for (const o of orders) {
     const filledSize = (o.orig_size ?? 0) - (o.remaining_size ?? 0);

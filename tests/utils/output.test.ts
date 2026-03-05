@@ -1,17 +1,17 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import chalk from "chalk";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import {
-  formatNumber,
-  formatPrice,
-  formatPnL,
-  formatPercent,
-  formatSide,
-  formatAddress,
-  formatTimestamp,
   createDepthBar,
-  formatOutput,
   createTable,
+  formatAddress,
+  formatNumber,
+  formatOutput,
+  formatPercent,
+  formatPnL,
+  formatPrice,
+  formatSide,
+  formatTimestamp,
 } from "../../src/utils/output.js";
 
 // Disable chalk colors for consistent test output
@@ -204,10 +204,18 @@ describe("output utilities", () => {
 
   describe("formatOutput", () => {
     it("should output JSON when json option is true", () => {
-      const consoleSpy = vi.spyOn(console, "log").mockImplementation(() => {});
+      const consoleSpy = vi.spyOn(console, "log").mockImplementation(() => {
+        /* empty */
+      });
       const data = { foo: "bar", num: 123 };
 
-      formatOutput(data, () => {}, { json: true });
+      formatOutput(
+        data,
+        () => {
+          /* empty */
+        },
+        { json: true },
+      );
 
       expect(consoleSpy).toHaveBeenCalledWith(JSON.stringify(data, null, 2));
       consoleSpy.mockRestore();

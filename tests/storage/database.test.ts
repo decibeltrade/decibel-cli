@@ -9,7 +9,10 @@ import os from "os";
 const { TEST_DIR, TEST_DB_PATH } = vi.hoisted(() => {
   const pathModule = require("path");
   const osModule = require("os");
-  const testDir = pathModule.join(osModule.tmpdir(), "decibel-cli-db-test-" + Date.now() + "-" + Math.random().toString(36).slice(2));
+  const testDir = pathModule.join(
+    osModule.tmpdir(),
+    "decibel-cli-db-test-" + Date.now() + "-" + Math.random().toString(36).slice(2),
+  );
   return {
     TEST_DIR: testDir,
     TEST_DB_PATH: pathModule.join(testDir, "test.db"),
@@ -57,9 +60,7 @@ describe("database", () => {
     it("should create accounts table", () => {
       const db = getDatabase();
       const tables = db
-        .prepare(
-          "SELECT name FROM sqlite_master WHERE type='table' AND name='accounts'"
-        )
+        .prepare("SELECT name FROM sqlite_master WHERE type='table' AND name='accounts'")
         .all();
       expect(tables.length).toBe(1);
     });
@@ -67,9 +68,7 @@ describe("database", () => {
     it("should create settings table", () => {
       const db = getDatabase();
       const tables = db
-        .prepare(
-          "SELECT name FROM sqlite_master WHERE type='table' AND name='settings'"
-        )
+        .prepare("SELECT name FROM sqlite_master WHERE type='table' AND name='settings'")
         .all();
       expect(tables.length).toBe(1);
     });
@@ -77,9 +76,7 @@ describe("database", () => {
     it("should create indexes on accounts table", () => {
       const db = getDatabase();
       const indexes = db
-        .prepare(
-          "SELECT name FROM sqlite_master WHERE type='index' AND tbl_name='accounts'"
-        )
+        .prepare("SELECT name FROM sqlite_master WHERE type='index' AND tbl_name='accounts'")
         .all() as { name: string }[];
 
       const indexNames = indexes.map((i) => i.name);
@@ -134,9 +131,9 @@ describe("database", () => {
 
       runMigration(db, 1, () => {});
 
-      const version = db
-        .prepare("SELECT value FROM settings WHERE key = 'db_version'")
-        .get() as { value: string };
+      const version = db.prepare("SELECT value FROM settings WHERE key = 'db_version'").get() as {
+        value: string;
+      };
       expect(version.value).toBe("1");
     });
 
@@ -165,9 +162,9 @@ describe("database", () => {
 
       expect(order).toEqual([1, 2, 3]);
 
-      const version = db
-        .prepare("SELECT value FROM settings WHERE key = 'db_version'")
-        .get() as { value: string };
+      const version = db.prepare("SELECT value FROM settings WHERE key = 'db_version'").get() as {
+        value: string;
+      };
       expect(version.value).toBe("3");
     });
   });
@@ -196,16 +193,16 @@ describe("database", () => {
     it("should enforce alias uniqueness", () => {
       const db = getDatabase();
 
-      db.prepare(
-        "INSERT INTO accounts (alias, address, type) VALUES (?, ?, ?)"
-      ).run("test", "0x123", "read-only");
+      db.prepare("INSERT INTO accounts (alias, address, type) VALUES (?, ?, ?)").run(
+        "test",
+        "0x123",
+        "read-only",
+      );
 
       expect(() =>
         db
-          .prepare(
-            "INSERT INTO accounts (alias, address, type) VALUES (?, ?, ?)"
-          )
-          .run("test", "0x456", "read-only")
+          .prepare("INSERT INTO accounts (alias, address, type) VALUES (?, ?, ?)")
+          .run("test", "0x456", "read-only"),
       ).toThrow();
     });
 
@@ -214,10 +211,8 @@ describe("database", () => {
 
       expect(() =>
         db
-          .prepare(
-            "INSERT INTO accounts (alias, address, type) VALUES (?, ?, ?)"
-          )
-          .run("test", "0x123", "invalid-type")
+          .prepare("INSERT INTO accounts (alias, address, type) VALUES (?, ?, ?)")
+          .run("test", "0x123", "invalid-type"),
       ).toThrow();
     });
   });

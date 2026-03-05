@@ -66,6 +66,7 @@ claude mcp add --transport stdio \
 ```
 
 Replace the values with your own:
+
 - `DECIBEL_PRIVATE_KEY` - Your API wallet private key
 - `DECIBEL_SUBACCOUNT_ADDRESS` - Your subaccount address
 - `DECIBEL_NODE_API_KEY` - Your node API key (from [geomi.dev](https://geomi.dev))
@@ -147,6 +148,7 @@ After saving, restart Claude Code or run `/mcp` to reload servers.
 ## Claude Desktop Setup
 
 **Config location:**
+
 - **macOS:** `~/Library/Application Support/Claude/claude_desktop_config.json`
 - **Windows:** `%APPDATA%\Claude\claude_desktop_config.json`
 
@@ -211,16 +213,16 @@ After saving, restart Claude Desktop to load the MCP server.
 
 ## Environment Variables
 
-| Variable | Required | Description |
-|----------|----------|-------------|
-| `DECIBEL_PRIVATE_KEY` | No* | API wallet private key (highest priority) |
-| `DECIBEL_SUBACCOUNT_ADDRESS` | No* | Subaccount address for trading |
-| `DECIBEL_ACCOUNT_ALIAS` | No* | Account alias from stored accounts |
-| `DECIBEL_NETWORK` | No | Network: `testnet` (default), `netna`, `local` |
-| `DECIBEL_NODE_API_KEY` | No | Node API key for higher rate limits (from [geomi.dev](https://geomi.dev)) |
-| `DECIBEL_GAS_STATION_API_KEY` | No | Gas station API key for sponsored transactions (from [geomi.dev](https://geomi.dev)) |
+| Variable                      | Required | Description                                                                          |
+| ----------------------------- | -------- | ------------------------------------------------------------------------------------ |
+| `DECIBEL_PRIVATE_KEY`         | No\*     | API wallet private key (highest priority)                                            |
+| `DECIBEL_SUBACCOUNT_ADDRESS`  | No\*     | Subaccount address for trading                                                       |
+| `DECIBEL_ACCOUNT_ALIAS`       | No\*     | Account alias from stored accounts                                                   |
+| `DECIBEL_NETWORK`             | No       | Network: `testnet` (default), `netna`, `local`                                       |
+| `DECIBEL_NODE_API_KEY`        | No       | Node API key for higher rate limits (from [geomi.dev](https://geomi.dev))            |
+| `DECIBEL_GAS_STATION_API_KEY` | No       | Gas station API key for sponsored transactions (from [geomi.dev](https://geomi.dev)) |
 
-*At least one of `DECIBEL_PRIVATE_KEY` + `DECIBEL_SUBACCOUNT_ADDRESS`, `DECIBEL_ACCOUNT_ALIAS`, or a default stored account is required.
+\*At least one of `DECIBEL_PRIVATE_KEY` + `DECIBEL_SUBACCOUNT_ADDRESS`, `DECIBEL_ACCOUNT_ALIAS`, or a default stored account is required.
 
 ### Authentication Priority
 
@@ -234,27 +236,27 @@ Once connected, Claude has access to these tools:
 
 ### Trading Tools
 
-| Tool | Description |
-|------|-------------|
-| `place_limit_order` | Place a limit order (buy/sell/long/short) |
+| Tool                 | Description                                  |
+| -------------------- | -------------------------------------------- |
+| `place_limit_order`  | Place a limit order (buy/sell/long/short)    |
 | `place_market_order` | Place a market order with slippage tolerance |
-| `cancel_order` | Cancel an open order by ID |
-| `set_leverage` | Set leverage for a market (1-50x) |
-| `get_positions` | Get all open positions |
-| `get_orders` | Get all open orders |
+| `cancel_order`       | Cancel an open order by ID                   |
+| `set_leverage`       | Set leverage for a market (1-50x)            |
+| `get_positions`      | Get all open positions                       |
+| `get_orders`         | Get all open orders                          |
 
 ### Market Data Tools
 
-| Tool | Description |
-|------|-------------|
-| `get_markets` | List all available markets |
-| `get_price` | Get current price, funding rate, open interest |
-| `get_orderbook` | Get order book with bids and asks |
+| Tool            | Description                                    |
+| --------------- | ---------------------------------------------- |
+| `get_markets`   | List all available markets                     |
+| `get_price`     | Get current price, funding rate, open interest |
+| `get_orderbook` | Get order book with bids and asks              |
 
 ### Account Tools
 
-| Tool | Description |
-|------|-------------|
+| Tool           | Description                                  |
+| -------------- | -------------------------------------------- |
 | `get_balances` | Get trading account balances and margin info |
 
 ## Example Conversations
@@ -262,18 +264,23 @@ Once connected, Claude has access to these tools:
 Once configured, you can interact with Decibel naturally:
 
 **Check balances:**
+
 > "What's my current balance on Decibel?"
 
 **Get market data:**
+
 > "Show me the BTC price and orderbook"
 
 **Place trades:**
+
 > "Go long 0.1 BTC at $75,000"
 
 **Manage positions:**
+
 > "What positions do I have open? Close the ETH position."
 
 **Set leverage:**
+
 > "Set my BTC leverage to 10x"
 
 ## Troubleshooting

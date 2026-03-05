@@ -103,7 +103,7 @@ export async function addAccount(params: {
   const result = db
     .prepare(
       `INSERT INTO accounts (alias, address, encrypted_key, type, is_default, created_at, updated_at)
-       VALUES (?, ?, ?, ?, ?, datetime('now'), datetime('now'))`
+       VALUES (?, ?, ?, ?, ?, datetime('now'), datetime('now'))`,
     )
     .run(alias, subaccountAddress, encryptedKey, type, isDefault ? 1 : 0);
 
@@ -111,10 +111,11 @@ export async function addAccount(params: {
   const count = db.prepare("SELECT COUNT(*) as count FROM accounts").get() as { count: number };
   if (count.count === 1) {
     db.prepare("UPDATE accounts SET is_default = 1, updated_at = datetime('now') WHERE id = ?").run(
-      result.lastInsertRowid
+      result.lastInsertRowid,
     );
   }
 
+  // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
   return getAccountById(Number(result.lastInsertRowid))!;
 }
 
@@ -123,7 +124,9 @@ export async function addAccount(params: {
  */
 export function getAllAccounts(): StoredAccount[] {
   const db = getDatabase();
-  const rows = db.prepare("SELECT * FROM accounts ORDER BY is_default DESC, alias ASC").all() as AccountRow[];
+  const rows = db
+    .prepare("SELECT * FROM accounts ORDER BY is_default DESC, alias ASC")
+    .all() as AccountRow[];
   return rows.map(rowToAccount);
 }
 
@@ -141,7 +144,9 @@ export function getAccountById(id: number): StoredAccount | null {
  */
 export function getAccountByAlias(alias: string): StoredAccount | null {
   const db = getDatabase();
-  const row = db.prepare("SELECT * FROM accounts WHERE alias = ?").get(alias) as AccountRow | undefined;
+  const row = db.prepare("SELECT * FROM accounts WHERE alias = ?").get(alias) as
+    | AccountRow
+    | undefined;
   return row ? rowToAccount(row) : null;
 }
 
@@ -150,7 +155,9 @@ export function getAccountByAlias(alias: string): StoredAccount | null {
  */
 export function getDefaultAccount(): StoredAccount | null {
   const db = getDatabase();
-  const row = db.prepare("SELECT * FROM accounts WHERE is_default = 1").get() as AccountRow | undefined;
+  const row = db.prepare("SELECT * FROM accounts WHERE is_default = 1").get() as
+    | AccountRow
+    | undefined;
   return row ? rowToAccount(row) : null;
 }
 
@@ -170,8 +177,11 @@ export function setDefaultAccount(alias: string): StoredAccount {
   db.prepare("UPDATE accounts SET is_default = 0, updated_at = datetime('now')").run();
 
   // Set new default
-  db.prepare("UPDATE accounts SET is_default = 1, updated_at = datetime('now') WHERE alias = ?").run(alias);
+  db.prepare(
+    "UPDATE accounts SET is_default = 1, updated_at = datetime('now') WHERE alias = ?",
+  ).run(alias);
 
+  // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
   return getAccountByAlias(alias)!;
 }
 
@@ -190,9 +200,13 @@ export function removeAccount(alias: string): boolean {
 
   // If the removed account was default, make the first remaining account default
   if (account.isDefault) {
-    const first = db.prepare("SELECT * FROM accounts ORDER BY id ASC LIMIT 1").get() as AccountRow | undefined;
+    const first = db.prepare("SELECT * FROM accounts ORDER BY id ASC LIMIT 1").get() as
+      | AccountRow
+      | undefined;
     if (first) {
-      db.prepare("UPDATE accounts SET is_default = 1, updated_at = datetime('now') WHERE id = ?").run(first.id);
+      db.prepare(
+        "UPDATE accounts SET is_default = 1, updated_at = datetime('now') WHERE id = ?",
+      ).run(first.id);
     }
   }
 
@@ -205,7 +219,7 @@ export function removeAccount(alias: string): boolean {
  */
 export async function getAptosAccount(
   storedAccount: StoredAccount,
-  password?: string
+  password?: string,
 ): Promise<Account> {
   if (storedAccount.type === "read-only") {
     throw new Error("Cannot create Aptos Account from read-only account");
@@ -252,8 +266,9 @@ export function updateAccountAlias(oldAlias: string, newAlias: string): StoredAc
 
   db.prepare("UPDATE accounts SET alias = ?, updated_at = datetime('now') WHERE alias = ?").run(
     newAlias,
-    oldAlias
+    oldAlias,
   );
 
+  // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
   return getAccountByAlias(newAlias)!;
 }

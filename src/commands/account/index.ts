@@ -1,23 +1,23 @@
 import { Command } from "commander";
 import inquirer from "inquirer";
 
+import { createReadDex, resolveSubaccountAddress } from "../../services/dex-factory.js";
 import {
   addAccount,
   getAllAccounts,
   removeAccount,
   setDefaultAccount,
 } from "../../storage/accounts.js";
+import { NetworkName } from "../../utils/config.js";
+import { isValidAddress, isValidPrivateKey } from "../../utils/encryption.js";
 import {
   createTable,
   formatAddress,
   formatOutput,
+  OutputOptions,
   printError,
   printSuccess,
-  OutputOptions,
 } from "../../utils/output.js";
-import { isValidAddress, isValidPrivateKey } from "../../utils/encryption.js";
-import { createReadDex, getConfig, resolveSubaccountAddress } from "../../services/dex-factory.js";
-import { NetworkName } from "../../utils/config.js";
 
 export function createAccountCommand(): Command {
   const account = new Command("account").description("Manage trading accounts");
@@ -28,12 +28,11 @@ export function createAccountCommand(): Command {
     .description("Add a new trading account (interactive)")
     .action(async () => {
       try {
-        const answers = await inquirer.prompt([
+        const answers = (await inquirer.prompt([
           {
             type: "input",
             name: "subaccountAddress",
             message: "Subaccount address (hex string starting with 0x):",
-            when: (answers) => answers.type === "read-only",
             validate: (input: string) => {
               if (!input) {
                 return "Subaccount address is required";
@@ -57,7 +56,7 @@ export function createAccountCommand(): Command {
             type: "password",
             name: "privateKey",
             message: "Private key (hex string starting with 0x):",
-            when: (answers) => answers.type === "api-wallet",
+            when: (answers: { type: string }) => answers.type === "api-wallet",
             validate: (input: string) => {
               if (!isValidPrivateKey(input)) {
                 return "Invalid private key format. Must be a hex string starting with 0x (64 hex characters)";
@@ -85,12 +84,18 @@ export function createAccountCommand(): Command {
             message: "Set as default account?",
             default: true,
           },
-        ]);
+        ])) as {
+          alias: string;
+          privateKey?: string;
+          subaccountAddress?: string;
+          type: "api-wallet" | "read-only";
+          isDefault: boolean;
+        };
 
         const account = await addAccount({
           alias: answers.alias.trim(),
           privateKey: answers.privateKey,
-          subaccountAddress: answers.subaccountAddress,
+          subaccountAddress: answers.subaccountAddress || "",
           type: answers.type,
           isDefault: answers.isDefault,
         });
@@ -144,7 +149,7 @@ export function createAccountCommand(): Command {
             }
             console.log(table.toString());
           },
-          options
+          options,
         );
       } catch (error) {
         printError(error instanceof Error ? error.message : String(error));
@@ -167,7 +172,7 @@ export function createAccountCommand(): Command {
 
         let alias = aliasArg;
         if (!alias) {
-          const answers = await inquirer.prompt([
+          const answers = (await inquirer.prompt([
             {
               type: "list",
               name: "alias",
@@ -177,26 +182,26 @@ export function createAccountCommand(): Command {
                 value: a.alias,
               })),
             },
-          ]);
+          ])) as { alias: string };
           alias = answers.alias;
         }
 
         if (!options.yes) {
-          const confirm = await inquirer.prompt([
+          const confirm = (await inquirer.prompt([
             {
               type: "confirm",
               name: "confirm",
               message: `Are you sure you want to remove account "${alias}"?`,
               default: false,
             },
-          ]);
+          ])) as { confirm: boolean };
           if (!confirm.confirm) {
             console.log("Cancelled");
             return;
           }
         }
 
-        const removed = removeAccount(alias!);
+        const removed = removeAccount(alias);
         if (removed) {
           printSuccess(`Account "${alias}" removed`);
         } else {
@@ -223,7 +228,7 @@ export function createAccountCommand(): Command {
 
         let alias = aliasArg;
         if (!alias) {
-          const answers = await inquirer.prompt([
+          const answers = (await inquirer.prompt([
             {
               type: "list",
               name: "alias",
@@ -233,11 +238,11 @@ export function createAccountCommand(): Command {
                 value: a.alias,
               })),
             },
-          ]);
+          ])) as { alias: string };
           alias = answers.alias;
         }
 
-        const account = setDefaultAccount(alias!);
+        const account = setDefaultAccount(alias);
         printSuccess(`"${account.alias}" is now the default account`);
       } catch (error) {
         printError(error instanceof Error ? error.message : String(error));
@@ -254,7 +259,10 @@ export function createAccountCommand(): Command {
     .option("--network <network>", "Network to use (testnet, netna, local)")
     .action(async (options: OutputOptions & { account?: string; network?: string }) => {
       try {
-        const subaccountAddr = resolveSubaccountAddress({ network: options.network as NetworkName, accountAlias: options.account });
+        const subaccountAddr = resolveSubaccountAddress({
+          network: options.network as NetworkName,
+          accountAlias: options.account,
+        });
         const readDex = createReadDex({ network: options.network as NetworkName });
 
         // Fetch account overview
@@ -273,14 +281,17 @@ export function createAccountCommand(): Command {
             const table = createTable(["Property", "Value"]);
             table.push(["Subaccount Address", formatAddress(d.subaccountAddress)]);
             // perp_equity_balance = account value (collateral + unrealized PnL)
-            table.push(["Account Value", `$${Number(d.perp_equity_balance).toFixed(2)}`]);
-            table.push(["Unrealized PnL", `$${Number(d.unrealized_pnl).toFixed(2)}`]);
+            table.push(["Account Value", `$${d.perp_equity_balance.toFixed(2)}`]);
+            table.push(["Unrealized PnL", `$${d.unrealized_pnl.toFixed(2)}`]);
             // cross_account_position is the net position value
-            table.push(["Position Value", `$${Number(d.cross_account_position).toFixed(2)}`]);
-            table.push(["Withdrawable (Cross)", `$${Number(d.usdc_cross_withdrawable_balance).toFixed(2)}`]);
+            table.push(["Position Value", `$${d.cross_account_position.toFixed(2)}`]);
+            table.push([
+              "Withdrawable (Cross)",
+              `$${d.usdc_cross_withdrawable_balance.toFixed(2)}`,
+            ]);
             console.log(table.toString());
           },
-          options
+          options,
         );
       } catch (error) {
         printError(error instanceof Error ? error.message : String(error));

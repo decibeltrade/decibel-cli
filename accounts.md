@@ -7,18 +7,19 @@ Decibel CLI supports two methods for authentication: stored accounts and environ
 Decibel CLI uses **API wallets** to sign transactions on behalf of your Decibel subaccount. API wallets are created through the Decibel UI at [app.decibel.trade/api](https://app.decibel.trade/api). They allow you to perform automated or programmatic trading actions without permitting deposits or withdrawals.
 
 Each account in the CLI consists of:
+
 - A **subaccount address** - the Decibel subaccount you're trading on
 - An **API wallet private key** (optional) - for signing transactions
 
 ## When to Use Which
 
-| Use Case | Recommended Method |
-|----------|-------------------|
-| **CLI daily trading** | Stored accounts |
-| **Multiple accounts** | Stored accounts |
-| **MCP server (Claude)** | Stored accounts (no secrets in config) |
-| **Scripts / CI** | Environment variable |
-| **Quick one-off command** | Environment variable |
+| Use Case                  | Recommended Method                     |
+| ------------------------- | -------------------------------------- |
+| **CLI daily trading**     | Stored accounts                        |
+| **Multiple accounts**     | Stored accounts                        |
+| **MCP server (Claude)**   | Stored accounts (no secrets in config) |
+| **Scripts / CI**          | Environment variable                   |
+| **Quick one-off command** | Environment variable                   |
 
 > **Tip:** For MCP, stored accounts are recommended because you don't need to put your private key in the Claude config file. See [mcp.md](./mcp.md) for MCP setup.
 
@@ -54,6 +55,7 @@ decibel-cli account ls
 ```
 
 Output:
+
 ```
 +-------+--------------------+-----------+---------+
 | Name  | Address            | Type      | Default |
@@ -131,12 +133,14 @@ The CLI automatically loads this file.
 When multiple authentication methods are available, the CLI uses this priority:
 
 ### For transactions (signing required):
+
 1. **`--account` flag** - Highest priority
 2. **`DECIBEL_PRIVATE_KEY` environment variable**
 3. **`DECIBEL_ACCOUNT_ALIAS` environment variable** - Stored account by alias
 4. **Default stored account** - Lowest priority
 
 ### For read-only operations:
+
 1. **`--account` flag** - Highest priority
 2. **`DECIBEL_SUBACCOUNT_ADDRESS` environment variable**
 3. **`DECIBEL_ACCOUNT_ALIAS` environment variable** - Stored account by alias
@@ -194,6 +198,7 @@ decibel-cli account info
 ```
 
 Output:
+
 ```
 +-------------------------+-------------------------------------------------------------------+
 | Property                | Value                                                             |

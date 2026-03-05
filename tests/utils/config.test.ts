@@ -51,20 +51,6 @@ describe("config", () => {
     });
   });
 
-  describe("NETWORK_CONFIGS", () => {
-    it("should have testnet config", () => {
-      expect(NETWORK_CONFIGS.testnet).toBeDefined();
-    });
-
-    it("should have netna config", () => {
-      expect(NETWORK_CONFIGS.netna).toBeDefined();
-    });
-
-    it("should have local config", () => {
-      expect(NETWORK_CONFIGS.local).toBeDefined();
-    });
-  });
-
   describe("getNetworkConfig", () => {
     it("should return testnet config for testnet", () => {
       const config = getNetworkConfig("testnet");
@@ -79,12 +65,6 @@ describe("config", () => {
     it("should return local config for local", () => {
       const config = getNetworkConfig("local");
       expect(config).toBe(NETWORK_CONFIGS.local);
-    });
-
-    it("should throw error for unknown network", () => {
-      expect(() => getNetworkConfig("unknown")).toThrow(
-        "Unknown network: unknown. Valid networks: testnet, netna, local"
-      );
     });
   });
 

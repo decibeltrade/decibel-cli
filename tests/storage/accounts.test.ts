@@ -6,7 +6,10 @@ import { existsSync, rmSync, mkdirSync } from "fs";
 const { TEST_DIR, TEST_DB_PATH } = vi.hoisted(() => {
   const pathModule = require("path");
   const osModule = require("os");
-  const testDir = pathModule.join(osModule.tmpdir(), "decibel-cli-accounts-test-" + Date.now() + "-" + Math.random().toString(36).slice(2));
+  const testDir = pathModule.join(
+    osModule.tmpdir(),
+    "decibel-cli-accounts-test-" + Date.now() + "-" + Math.random().toString(36).slice(2),
+  );
   return {
     TEST_DIR: testDir,
     TEST_DB_PATH: pathModule.join(testDir, "test.db"),
@@ -34,8 +37,7 @@ import {
 } from "../../src/storage/accounts.js";
 
 // Test private key (DO NOT use in production - this is a randomly generated test key)
-const TEST_PRIVATE_KEY =
-  "0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef";
+const TEST_PRIVATE_KEY = "0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef";
 const TEST_SUBACCOUNT_ADDRESS =
   "0xabcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890";
 
@@ -166,7 +168,7 @@ describe("accounts storage", () => {
           alias: "duplicate",
           subaccountAddress: "0x456",
           type: "read-only",
-        })
+        }),
       ).rejects.toThrow('Account with alias "duplicate" already exists');
     });
 
@@ -176,7 +178,7 @@ describe("accounts storage", () => {
           alias: "no-key",
           subaccountAddress: TEST_SUBACCOUNT_ADDRESS,
           type: "api-wallet",
-        })
+        }),
       ).rejects.toThrow("Private key is required for api-wallet type");
     });
 
@@ -186,7 +188,7 @@ describe("accounts storage", () => {
           alias: "no-address",
           subaccountAddress: "",
           type: "read-only",
-        })
+        }),
       ).rejects.toThrow("Subaccount address is required");
     });
 
@@ -197,7 +199,7 @@ describe("accounts storage", () => {
           privateKey: "invalid-key",
           subaccountAddress: TEST_SUBACCOUNT_ADDRESS,
           type: "api-wallet",
-        })
+        }),
       ).rejects.toThrow("Invalid private key format");
     });
 
@@ -207,7 +209,7 @@ describe("accounts storage", () => {
           alias: "invalid-address",
           subaccountAddress: "not-an-address",
           type: "read-only",
-        })
+        }),
       ).rejects.toThrow("Invalid address format");
     });
   });
@@ -320,7 +322,7 @@ describe("accounts storage", () => {
 
     it("should throw error for non-existent alias", () => {
       expect(() => setDefaultAccount("non-existent")).toThrow(
-        'Account with alias "non-existent" not found'
+        'Account with alias "non-existent" not found',
       );
     });
   });
@@ -364,7 +366,7 @@ describe("accounts storage", () => {
 
     it("should throw error for non-existent alias", () => {
       expect(() => updateAccountAlias("non-existent", "new")).toThrow(
-        'Account with alias "non-existent" not found'
+        'Account with alias "non-existent" not found',
       );
     });
 
@@ -373,7 +375,7 @@ describe("accounts storage", () => {
       await addAccount({ alias: "to-rename", subaccountAddress: "0x2", type: "read-only" });
 
       expect(() => updateAccountAlias("to-rename", "existing")).toThrow(
-        'Account with alias "existing" already exists'
+        'Account with alias "existing" already exists',
       );
     });
   });
@@ -416,7 +418,7 @@ describe("accounts storage", () => {
       });
 
       await expect(getAptosAccount(stored)).rejects.toThrow(
-        "Cannot create Aptos Account from read-only account"
+        "Cannot create Aptos Account from read-only account",
       );
     });
 
@@ -429,9 +431,7 @@ describe("accounts storage", () => {
         password: "secret",
       });
 
-      await expect(getAptosAccount(stored)).rejects.toThrow(
-        "Password required to decrypt account"
-      );
+      await expect(getAptosAccount(stored)).rejects.toThrow("Password required to decrypt account");
     });
   });
 });

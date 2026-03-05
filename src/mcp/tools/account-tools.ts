@@ -6,11 +6,7 @@
 
 import { z } from "zod";
 
-import {
-  createReadDex,
-  resolveSubaccountAddress,
-  DexOptions,
-} from "../../services/dex-factory.js";
+import { createReadDex, DexOptions, resolveSubaccountAddress } from "../../services/dex-factory.js";
 
 // Tool schemas
 export const GetBalancesSchema = z.object({}).describe("Get account balances");

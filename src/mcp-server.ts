@@ -19,13 +19,14 @@
  */
 
 import { config } from "dotenv";
+
 import { runMcpServer } from "./mcp/server.js";
-import { 
-  getEnvNetwork,
+import {
   getEnvAccountAlias,
-  getEnvPrivateKey,
   getEnvGasStationApiKey,
+  getEnvNetwork,
   getEnvNodeApiKey,
+  getEnvPrivateKey,
   getEnvSubaccountAddress,
 } from "./utils/config.js";
 
@@ -44,7 +45,7 @@ runMcpServer({
   privateKey: getEnvPrivateKey(),
   nodeApiKey: getEnvNodeApiKey(),
   gasStationApiKey: getEnvGasStationApiKey(),
-}).catch((error) => {
+}).catch((error: unknown) => {
   console.error("MCP server error:", error);
   process.exit(1);
 });

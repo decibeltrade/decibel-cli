@@ -28,18 +28,18 @@ Add this to your Claude Desktop or MCP client configuration:
 
 ### Available MCP Tools
 
-| Tool | Description |
-|------|-------------|
-| `place_limit_order` | Place a limit order |
-| `place_market_order` | Place a market order |
-| `cancel_order` | Cancel a specific order |
-| `set_leverage` | Set leverage for a market |
-| `get_positions` | Get open positions |
-| `get_orders` | Get open orders |
-| `get_markets` | List all markets |
-| `get_price` | Get current price |
-| `get_orderbook` | Get order book |
-| `get_balances` | Get account balances |
+| Tool                 | Description               |
+| -------------------- | ------------------------- |
+| `place_limit_order`  | Place a limit order       |
+| `place_market_order` | Place a market order      |
+| `cancel_order`       | Cancel a specific order   |
+| `set_leverage`       | Set leverage for a market |
+| `get_positions`      | Get open positions        |
+| `get_orders`         | Get open orders           |
+| `get_markets`        | List all markets          |
+| `get_price`          | Get current price         |
+| `get_orderbook`      | Get order book            |
+| `get_balances`       | Get account balances      |
 
 ---
 
@@ -67,6 +67,7 @@ decibel-cli account ls
 ```
 
 **Output:**
+
 ```
 +-------+--------------------+-----------+---------+
 | Name  | Address            | Type      | Default |
@@ -82,6 +83,7 @@ decibel-cli account info
 ```
 
 **Output:**
+
 ```
 +-------------------------+----------+
 | Property                | Value    |
@@ -104,6 +106,7 @@ decibel-cli markets ls
 ```
 
 **Output:**
+
 ```
 +---------+-------------+-----------+-------------+
 | Symbol  | Max Leverage| Tick Size | Min Size    |
@@ -123,6 +126,7 @@ decibel-cli markets price ETH/USD
 ```
 
 **Output:**
+
 ```
 +---------+-----------+-----------+-----------+------------+
 | Market  | Mark      | Index     | Bid       | Ask        |
@@ -138,6 +142,7 @@ decibel-cli markets book ETH/USD
 ```
 
 **Output:**
+
 ```
 ETH/USD Order Book
 
@@ -166,7 +171,7 @@ ETH/USD Order Book
        2317.55    411.8764  XXXXXXXXXXXXXXXXXXXX
 ```
 
-*Red prices = asks (sell orders), Green prices = bids (buy orders)*
+_Red prices = asks (sell orders), Green prices = bids (buy orders)_
 
 ---
 
@@ -179,6 +184,7 @@ decibel-cli trade order limit long 0.1 ETH/USD 2300
 ```
 
 **Output:**
+
 ```
 > Order placed successfully
 Order ID: N/A
@@ -192,6 +198,7 @@ decibel-cli trade orders
 ```
 
 **Output:**
+
 ```
 +---------------+-------------------+------+--------+----------+--------+-------+--------+
 | ID            | Market            | Side | Size   | Price    | Filled | Type  | Status |
@@ -207,6 +214,7 @@ decibel-cli trade order market long 0.05 ETH/USD
 ```
 
 **Output:**
+
 ```
 > Market order placed successfully
 Order ID: N/A
@@ -220,6 +228,7 @@ decibel-cli trade positions
 ```
 
 **Output:**
+
 ```
 +--------+------+--------+----------+-------+------+----------+-----------+
 | Market | Side | Size   | Entry    | Mark  | uPnL | Leverage | Liq Price |
@@ -235,6 +244,7 @@ decibel-cli trade order market short 0.05 ETH/USD
 ```
 
 **Output:**
+
 ```
 > Market order placed successfully
 Order ID: N/A
@@ -248,6 +258,7 @@ decibel-cli trade positions
 ```
 
 **Output:**
+
 ```
 No open positions
 ```
@@ -259,6 +270,7 @@ decibel-cli trade history
 ```
 
 **Output:**
+
 ```
 +----------------------+-------------------+-----------+--------+-----------+--------+-------+
 | Time                 | Market            | Action    | Size   | Price     | Fee    | PnL   |
@@ -279,6 +291,7 @@ decibel-cli trade cancel-all --yes
 ```
 
 **Output:**
+
 ```
 > Cancelled 1 order(s)
 ```
@@ -289,45 +302,45 @@ decibel-cli trade cancel-all --yes
 
 ### Global Options
 
-| Option | Description |
-|--------|-------------|
+| Option                | Description                                       |
+| --------------------- | ------------------------------------------------- |
 | `--network <network>` | Network: testnet, netna, local (default: testnet) |
-| `--json` | Output in JSON format (for scripting/AI agents) |
-| `-h, --help` | Show help |
-| `-V, --version` | Show version |
+| `--json`              | Output in JSON format (for scripting/AI agents)   |
+| `-h, --help`          | Show help                                         |
+| `-V, --version`       | Show version                                      |
 
 ### Account Commands
 
-| Command | Description |
-|---------|-------------|
-| `account add` | Add a new account (interactive) |
-| `account ls` | List all accounts |
-| `account remove <name>` | Remove an account |
-| `account set-default <name>` | Set default account |
-| `account info` | Show account balances and equity |
+| Command                      | Description                      |
+| ---------------------------- | -------------------------------- |
+| `account add`                | Add a new account (interactive)  |
+| `account ls`                 | List all accounts                |
+| `account remove <name>`      | Remove an account                |
+| `account set-default <name>` | Set default account              |
+| `account info`               | Show account balances and equity |
 
 ### Trade Commands
 
-| Command | Description |
-|---------|-------------|
-| `trade order limit <side> <size> <symbol> <price>` | Place limit order |
-| `trade order market <side> <size> <symbol>` | Place market order |
-| `trade cancel <orderId>` | Cancel specific order |
-| `trade cancel-all` | Cancel all orders |
-| `trade set-leverage <symbol> <leverage>` | Set leverage |
-| `trade positions` | View open positions |
-| `trade orders` | View open orders |
-| `trade history` | View trade history |
+| Command                                            | Description           |
+| -------------------------------------------------- | --------------------- |
+| `trade order limit <side> <size> <symbol> <price>` | Place limit order     |
+| `trade order market <side> <size> <symbol>`        | Place market order    |
+| `trade cancel <orderId>`                           | Cancel specific order |
+| `trade cancel-all`                                 | Cancel all orders     |
+| `trade set-leverage <symbol> <leverage>`           | Set leverage          |
+| `trade positions`                                  | View open positions   |
+| `trade orders`                                     | View open orders      |
+| `trade history`                                    | View trade history    |
 
-*Side options: `long`, `short`, `buy`, `sell`*
+_Side options: `long`, `short`, `buy`, `sell`_
 
 ### Market Commands
 
-| Command | Description |
-|---------|-------------|
-| `markets ls` | List all markets |
-| `markets price <symbol>` | Get current price |
-| `markets book <symbol>` | View order book with depth |
+| Command                  | Description                |
+| ------------------------ | -------------------------- |
+| `markets ls`             | List all markets           |
+| `markets price <symbol>` | Get current price          |
+| `markets book <symbol>`  | View order book with depth |
 
 ---
 

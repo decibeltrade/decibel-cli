@@ -11,6 +11,7 @@ Command-line interface for trading on [Decibel DEX](https://decibel.trade) - a p
 - **Market Data** - Real-time prices, orderbook with depth visualization
 - **Watch Mode** - WebSocket-powered real-time updates
 - **MCP Server** - AI agent integration via Model Context Protocol
+- **Affiliate Management** - Generate referral codes from ETH/Solana/Aptos addresses with collision checking
 - **JSON Output** - `--json` flag on all commands for machine-readable output
 
 ## Installation
@@ -94,6 +95,63 @@ decibel-cli markets price <symbol>   # Get price
 decibel-cli markets book <symbol>    # Order book
 ```
 
+### Affiliate
+
+Generate affiliate referral codes from ETH, Solana, or Aptos wallet addresses. Supports multi-chain input — ETH and Solana addresses are automatically derived to Aptos addresses using the derivable account pattern (scheme 0x05).
+
+```bash
+# Single entry
+decibel-cli affiliate create-codes --name "Alice" --address 0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045
+
+# Batch from CSV file
+decibel-cli affiliate create-codes --file affiliates.csv
+
+# With collision check (read-only, outputs SQL)
+decibel-cli affiliate create-codes --file affiliates.csv \
+  --clickhouse-url https://clickhouse.example.com
+
+# With collision check + auto-insert into ClickHouse
+decibel-cli affiliate create-codes --file affiliates.csv \
+  --clickhouse-url https://clickhouse.example.com --execute
+```
+
+**CSV format:** `name,address` (comma or tab separated, optional header row)
+
+```csv
+name,address
+Alice,0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045
+Bob,TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA
+Charlie,0x0000000000000000000000000000000000000000000000000000000000000001
+```
+
+| Option                   | Description                                                                  |
+| ------------------------ | ---------------------------------------------------------------------------- |
+| `--file <path>`          | CSV file with `name,address` columns                                         |
+| `--name <name>`          | Affiliate name (single entry mode)                                           |
+| `--address <address>`    | Wallet address: ETH (0x+40 hex), Solana (base58), or Aptos (0x+64 hex)       |
+| `--max-usage <n>`        | Max redemptions per code (default: 100)                                      |
+| `--clickhouse-url <url>` | ClickHouse URL for collision check (or set `DECIBEL_CLICKHOUSE_URL` env var) |
+| `--execute`              | Insert codes into ClickHouse (requires `--clickhouse-url`)                   |
+
+**Modes of operation:**
+
+1. **SQL-only (default):** Outputs INSERT SQL + collision check SQL for manual execution. No database connection needed.
+2. **Collision check only (`--clickhouse-url`):** Connects to ClickHouse read-only to check for code/address collisions, then outputs INSERT SQL for non-colliding entries.
+3. **Execute (`--clickhouse-url --execute`):** Checks collisions, inserts one-by-one, verifies each insert, and prints reconciliation SQL for any failures.
+
+When a collision is detected:
+
+- **Code collision** — silently regenerates a new unique code
+- **Address already has an affiliate code** — skips with a runbook (shows existing code, usage stats, and fix SQL if the code is maxed out)
+
+> **Warning — ClickHouse write access**
+>
+> The `--execute` flag performs INSERT operations on the `managed_referral_codes` table.
+> The connection string used with `--clickhouse-url` (or `DECIBEL_CLICKHOUSE_URL`) should
+> point to a ClickHouse user scoped to only this table. A dedicated read/write user for
+> `managed_referral_codes` is planned — until then, use the `--execute` flag with caution
+> and prefer the default SQL-output mode for auditable manual execution.
+
 ## Global Options
 
 | Option              | Description                     |
@@ -174,6 +232,7 @@ Replace `/path/to/decibel-cli` with the actual path to your decibel-cli installa
 | `DECIBEL_NETWORK`             | Network (testnet, netna, local)                 |
 | `DECIBEL_NODE_API_KEY`        | Node API key for higher rate limits             |
 | `DECIBEL_GAS_STATION_API_KEY` | Gas station API key for sponsored transactions  |
+| `DECIBEL_CLICKHOUSE_URL`      | ClickHouse URL for affiliate collision checks   |
 
 ## Development
 

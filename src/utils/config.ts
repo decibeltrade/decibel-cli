@@ -1,12 +1,6 @@
+import { DecibelConfig, LOCAL_CONFIG, NETNA_CONFIG, TESTNET_CONFIG } from "@decibeltrade/sdk";
 import { homedir } from "os";
 import { join } from "path";
-
-import {
-  DecibelConfig,
-  NETNA_CONFIG,
-  TESTNET_CONFIG,
-  LOCAL_CONFIG,
-} from "@decibeltrade/sdk";
 
 // Data directory paths
 export const DECIBEL_DIR = join(homedir(), ".decibel");
@@ -26,13 +20,8 @@ export const NETWORK_CONFIGS: Record<NetworkName, DecibelConfig> = {
   local: LOCAL_CONFIG,
 };
 
-export function getNetworkConfig(network: string): DecibelConfig {
-  const config = NETWORK_CONFIGS[network as NetworkName];
-  if (!config) {
-    throw new Error(
-      `Unknown network: ${network}. Valid networks: ${Object.keys(NETWORK_CONFIGS).join(", ")}`
-    );
-  }
+export function getNetworkConfig(network: NetworkName): DecibelConfig {
+  const config = NETWORK_CONFIGS[network];
   return config;
 }
 
@@ -41,7 +30,7 @@ export function getEnvNetwork(): NetworkName {
   if (network && network in NETWORK_CONFIGS) {
     return network as NetworkName;
   }
-  return DEFAULT_NETWORK as NetworkName;
+  return DEFAULT_NETWORK;
 }
 
 export function getEnvPrivateKey(): string | undefined {

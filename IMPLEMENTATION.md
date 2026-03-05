@@ -6,25 +6,25 @@ This document maps the original implementation plan to the actual files created.
 
 ### Completed Features
 
-| Feature | Status | Files |
-|---------|--------|-------|
-| CLI Entry Point | Done | `src/index.ts` |
-| Account Management | Done | `src/commands/account/index.ts` |
-| Markets Commands | Done | `src/commands/markets/index.ts` |
-| Trading Commands | Done | `src/commands/trade/index.ts` |
-| MCP Server | Done | `src/mcp-server.ts`, `src/mcp/server.ts` |
-| SQLite Storage | Done | `src/storage/database.ts`, `src/storage/accounts.ts` |
-| Utility Modules | Done | `src/utils/config.ts`, `src/utils/output.ts`, `src/utils/encryption.ts` |
-| SDK Factory | Done | `src/services/dex-factory.ts` |
-| Skill Documentation | Done | `skills/decibel/SKILL.md`, `reference.md`, `examples.md` |
-| Unit Tests | Done | `tests/` directory |
+| Feature             | Status | Files                                                                   |
+| ------------------- | ------ | ----------------------------------------------------------------------- |
+| CLI Entry Point     | Done   | `src/index.ts`                                                          |
+| Account Management  | Done   | `src/commands/account/index.ts`                                         |
+| Markets Commands    | Done   | `src/commands/markets/index.ts`                                         |
+| Trading Commands    | Done   | `src/commands/trade/index.ts`                                           |
+| MCP Server          | Done   | `src/mcp-server.ts`, `src/mcp/server.ts`                                |
+| SQLite Storage      | Done   | `src/storage/database.ts`, `src/storage/accounts.ts`                    |
+| Utility Modules     | Done   | `src/utils/config.ts`, `src/utils/output.ts`, `src/utils/encryption.ts` |
+| SDK Factory         | Done   | `src/services/dex-factory.ts`                                           |
+| Skill Documentation | Done   | `skills/decibel/SKILL.md`, `reference.md`, `examples.md`                |
+| Unit Tests          | Done   | `tests/` directory                                                      |
 
 ### Not Yet Implemented
 
-| Feature | Priority | Notes |
-|---------|----------|-------|
-| Vaults Commands | Medium | `vaults ls/info/deposit/withdraw` |
-| Server Mode | Low | Background WebSocket cache server |
+| Feature         | Priority | Notes                             |
+| --------------- | -------- | --------------------------------- |
+| Vaults Commands | Medium   | `vaults ls/info/deposit/withdraw` |
+| Server Mode     | Low      | Background WebSocket cache server |
 
 ## File Structure (Actual)
 
@@ -114,36 +114,40 @@ When resolving subaccount address for read-only operations:
 The Decibel SDK uses specific field names. Here's the mapping from common names to SDK types:
 
 ### Market Prices (`MarketPriceSchema`)
-| CLI Display | SDK Field |
-|-------------|-----------|
-| Mark Price | `mark_px` |
-| Oracle Price | `oracle_px` |
-| Funding Rate | `funding_rate_bps` (in basis points) |
-| Open Interest | `open_interest` |
+
+| CLI Display   | SDK Field                            |
+| ------------- | ------------------------------------ |
+| Mark Price    | `mark_px`                            |
+| Oracle Price  | `oracle_px`                          |
+| Funding Rate  | `funding_rate_bps` (in basis points) |
+| Open Interest | `open_interest`                      |
 
 ### Account Overview (`AccountOverviewSchema`)
-| CLI Display | SDK Field |
-|-------------|-----------|
-| Account Value | `perp_equity_balance` |
-| Unrealized PnL | `unrealized_pnl` |
-| Withdrawable (Cross) | `usdc_cross_withdrawable_balance` |
+
+| CLI Display             | SDK Field                            |
+| ----------------------- | ------------------------------------ |
+| Account Value           | `perp_equity_balance`                |
+| Unrealized PnL          | `unrealized_pnl`                     |
+| Withdrawable (Cross)    | `usdc_cross_withdrawable_balance`    |
 | Withdrawable (Isolated) | `usdc_isolated_withdrawable_balance` |
-| Total Margin | `total_margin` |
+| Total Margin            | `total_margin`                       |
 
 ### Open Orders (`UserOpenOrderSchema`)
-| CLI Display | SDK Field |
-|-------------|-----------|
-| Order ID | `order_id` |
-| Market | `market` (address) |
-| Size | `remaining_size` |
-| Price | `price` |
-| Status | `details` |
+
+| CLI Display | SDK Field          |
+| ----------- | ------------------ |
+| Order ID    | `order_id`         |
+| Market      | `market` (address) |
+| Size        | `remaining_size`   |
+| Price       | `price`            |
+| Status      | `details`          |
 
 ## MCP Server Tools
 
 The MCP server exposes these tools for AI agent integration:
 
 ### Trading Tools
+
 - `place_limit_order` - Place limit order with price, size, side, TIF
 - `place_market_order` - Market order with slippage tolerance
 - `cancel_order` - Cancel by order ID and market
@@ -152,22 +156,24 @@ The MCP server exposes these tools for AI agent integration:
 - `get_orders` - Get all open orders
 
 ### Market Tools
+
 - `get_markets` - List all available markets
 - `get_price` - Get price for a specific market
 - `get_orderbook` - Get order book with depth
 
 ### Account Tools
+
 - `get_balances` - Get trading account balances and margin info
 
 ## Environment Variables
 
-| Variable | Description |
-|----------|-------------|
-| `DECIBEL_PRIVATE_KEY` | API wallet private key for signing transactions |
-| `DECIBEL_SUBACCOUNT_ADDRESS` | Subaccount address for read operations |
-| `DECIBEL_ACCOUNT_ALIAS` | Account alias from stored accounts |
-| `DECIBEL_NETWORK` | Network: testnet, netna, local (default: testnet) |
-| `DECIBEL_NODE_API_KEY` | Node API key for higher rate limits (from geomi.dev) |
+| Variable                      | Description                                                     |
+| ----------------------------- | --------------------------------------------------------------- |
+| `DECIBEL_PRIVATE_KEY`         | API wallet private key for signing transactions                 |
+| `DECIBEL_SUBACCOUNT_ADDRESS`  | Subaccount address for read operations                          |
+| `DECIBEL_ACCOUNT_ALIAS`       | Account alias from stored accounts                              |
+| `DECIBEL_NETWORK`             | Network: testnet, netna, local (default: testnet)               |
+| `DECIBEL_NODE_API_KEY`        | Node API key for higher rate limits (from geomi.dev)            |
 | `DECIBEL_GAS_STATION_API_KEY` | Gas station API key for sponsored transactions (from geomi.dev) |
 
 ## Build & Run Commands

@@ -6,7 +6,10 @@ import { existsSync, rmSync, mkdirSync } from "fs";
 const { TEST_DIR, TEST_DB_PATH } = vi.hoisted(() => {
   const pathModule = require("path");
   const osModule = require("os");
-  const testDir = pathModule.join(osModule.tmpdir(), "decibel-cli-dex-test-" + Date.now() + "-" + Math.random().toString(36).slice(2));
+  const testDir = pathModule.join(
+    osModule.tmpdir(),
+    "decibel-cli-dex-test-" + Date.now() + "-" + Math.random().toString(36).slice(2),
+  );
   return {
     TEST_DIR: testDir,
     TEST_DB_PATH: pathModule.join(testDir, "test.db"),
@@ -39,7 +42,10 @@ vi.mock("../../src/utils/config.js", async () => {
     getEnvSubaccountAddress: vi.fn(() => undefined),
     getEnvAccountAlias: vi.fn(() => undefined),
     getEnvNetwork: vi.fn(() => "testnet"),
-    getNetworkConfig: vi.fn((network: string) => ({ network, endpoint: `https://${network}.decibel.trade` })),
+    getNetworkConfig: vi.fn((network: string) => ({
+      network,
+      endpoint: `https://${network}.decibel.trade`,
+    })),
   };
 });
 
@@ -54,8 +60,7 @@ import {
 } from "../../src/services/dex-factory.js";
 
 // Test private key (DO NOT use in production)
-const TEST_PRIVATE_KEY =
-  "0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef";
+const TEST_PRIVATE_KEY = "0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef";
 const TEST_SUBACCOUNT_ADDRESS =
   "0xabcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890";
 
@@ -143,14 +148,12 @@ describe("dex-factory", () => {
     });
 
     it("should throw error when no account found", async () => {
-      await expect(resolveAccount({})).rejects.toThrow(
-        "No account configured"
-      );
+      await expect(resolveAccount({})).rejects.toThrow("No account configured");
     });
 
     it("should throw error for non-existent alias", async () => {
       await expect(resolveAccount({ accountAlias: "non-existent" })).rejects.toThrow(
-        'Account "non-existent" not found'
+        'Account "non-existent" not found',
       );
     });
 
@@ -162,7 +165,7 @@ describe("dex-factory", () => {
       });
 
       await expect(resolveAccount({ accountAlias: "readonly" })).rejects.toThrow(
-        "read-only and cannot be used for transactions"
+        "read-only and cannot be used for transactions",
       );
     });
   });
@@ -217,7 +220,7 @@ describe("dex-factory", () => {
 
     it("should throw error for non-existent alias", () => {
       expect(() => resolveSubaccountAddress({ accountAlias: "no-such-account" })).toThrow(
-        'Account "no-such-account" not found'
+        'Account "no-such-account" not found',
       );
     });
   });
@@ -235,8 +238,7 @@ describe("dex-factory", () => {
     });
 
     it("should prioritize privateKey option over stored account", async () => {
-      const differentKey =
-        "0xfedcba0987654321fedcba0987654321fedcba0987654321fedcba0987654321";
+      const differentKey = "0xfedcba0987654321fedcba0987654321fedcba0987654321fedcba0987654321";
       const result = await resolveAccount({ privateKey: differentKey });
 
       // Should use the provided key, not the stored one
@@ -246,8 +248,7 @@ describe("dex-factory", () => {
     it("should prioritize account option over default", async () => {
       await addAccount({
         alias: "named-account",
-        privateKey:
-          "0xfedcba0987654321fedcba0987654321fedcba0987654321fedcba0987654321",
+        privateKey: "0xfedcba0987654321fedcba0987654321fedcba0987654321fedcba0987654321",
         subaccountAddress: "0x1111111111111111111111111111111111111111111111111111111111111111",
         type: "api-wallet",
       });

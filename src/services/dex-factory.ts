@@ -1,13 +1,9 @@
-import { Account, AccountAddress, createObjectAddress, Ed25519PrivateKey, MoveString } from "@aptos-labs/ts-sdk";
-import {
-  DecibelConfig,
-  DecibelReadDex,
-  DecibelWriteDex,
-} from "@decibeltrade/sdk";
+import { Account, Ed25519PrivateKey } from "@aptos-labs/ts-sdk";
+import { DecibelConfig, DecibelReadDex, DecibelWriteDex } from "@decibeltrade/sdk";
 
 import {
-  getAptosAccount,
   getAccountByAlias,
+  getAptosAccount,
   getDefaultAccount,
   StoredAccount,
 } from "../storage/accounts.js";
@@ -70,7 +66,7 @@ export function createReadDex(options: DexOptions = {}): DecibelReadDex {
  * Priority: privateKey option > account option > env var > default account
  */
 export async function resolveAccount(
-  options: DexOptions = {}
+  options: DexOptions = {},
 ): Promise<{ account: Account; storedAccount?: StoredAccount }> {
   // Priority 1: Direct private key from options
   if (options.privateKey) {
@@ -78,34 +74,43 @@ export async function resolveAccount(
     return { account: Account.fromPrivateKey({ privateKey: privKey }) };
   }
 
-  // Priority 2: Environment variable
+  // Priority 2: Named account from storage (--account flag)
+  if (options.accountAlias) {
+    const storedAccount = getAccountByAlias(options.accountAlias);
+    if (!storedAccount) {
+      throw new Error(
+        `Account "${options.accountAlias}" not found. Run "decibel-cli account ls" to see available accounts.`,
+      );
+    }
+
+    if (storedAccount.type === "read-only") {
+      throw new Error(
+        `Account "${storedAccount.alias}" is read-only and cannot be used for transactions. Use an api-wallet account instead.`,
+      );
+    }
+
+    const account = await getAptosAccount(storedAccount, options.password);
+    return { account, storedAccount };
+  }
+
+  // Priority 3: Environment variable
   const envKey = getEnvPrivateKey();
   if (envKey) {
     const privKey = new Ed25519PrivateKey(envKey);
     return { account: Account.fromPrivateKey({ privateKey: privKey }) };
   }
 
-  // Priority 3: Named account from storage
-  let storedAccount: StoredAccount | null = null;
-
-  if (options.accountAlias) {
-    storedAccount = getAccountByAlias(options.accountAlias);
-    if (!storedAccount) {
-      throw new Error(`Account "${options.accountAlias}" not found. Run "decibel-cli account ls" to see available accounts.`);
-    }
-  } else {
-    // Priority 4: Default account
-    storedAccount = getDefaultAccount();
-    if (!storedAccount) {
-      throw new Error(
-        "No account configured. Run \"decibel-cli account add\" to add an account, or set DECIBEL_PRIVATE_KEY environment variable."
-      );
-    }
+  // Priority 4: Default account
+  const storedAccount = getDefaultAccount();
+  if (!storedAccount) {
+    throw new Error(
+      'No account configured. Run "decibel-cli account add" to add an account, or set DECIBEL_PRIVATE_KEY environment variable.',
+    );
   }
 
   if (storedAccount.type === "read-only") {
     throw new Error(
-      `Account "${storedAccount.alias}" is read-only and cannot be used for transactions. Use an api-wallet account instead.`
+      `Account "${storedAccount.alias}" is read-only and cannot be used for transactions. Use an api-wallet account instead.`,
     );
   }
 
@@ -115,6 +120,7 @@ export async function resolveAccount(
 
 /**
  * Get the address for the current account (works for read-only too)
+ * Priority: subaccountAddress option > account option > env var > default account
  */
 export function resolveSubaccountAddress(options: DexOptions = {}): string {
   // Priority 1: Direct address from options
@@ -122,25 +128,25 @@ export function resolveSubaccountAddress(options: DexOptions = {}): string {
     return options.subaccountAddress;
   }
 
-  // Priority 2: Environment variable
+  // Priority 2: Named account from storage (--account flag)
+  if (options.accountAlias) {
+    const storedAccount = getAccountByAlias(options.accountAlias);
+    if (!storedAccount) {
+      throw new Error(`Account "${options.accountAlias}" not found.`);
+    }
+    return storedAccount.address;
+  }
+
+  // Priority 3: Environment variable
   const envSubaccountAddress = getEnvSubaccountAddress();
   if (envSubaccountAddress) {
     return envSubaccountAddress;
   }
 
-  // Priority 3: Named account from storage
-  let storedAccount: StoredAccount | null = null;
-
-  if (options.accountAlias) {
-    storedAccount = getAccountByAlias(options.accountAlias);
-    if (!storedAccount) {
-      throw new Error(`Account "${options.accountAlias}" not found.`);
-    }
-  } else {
-    storedAccount = getDefaultAccount();
-    if (!storedAccount) {
-      throw new Error("No account configured.");
-    }
+  // Priority 4: Default account
+  const storedAccount = getDefaultAccount();
+  if (!storedAccount) {
+    throw new Error("No account configured.");
   }
 
   return storedAccount.address;
@@ -149,9 +155,7 @@ export function resolveSubaccountAddress(options: DexOptions = {}): string {
 /**
  * Create a write SDK instance (requires an account)
  */
-export async function createWriteDex(
-  options: DexOptions = {}
-): Promise<DecibelWriteDex> {
+export async function createWriteDex(options: DexOptions = {}): Promise<DecibelWriteDex> {
   const config = getConfig(options);
   const { account } = await resolveAccount(options);
   const nodeApiKey = options.nodeApiKey ?? getEnvNodeApiKey();

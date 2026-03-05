@@ -21,19 +21,13 @@ async function deriveKey(password: string, salt: Buffer): Promise<Buffer> {
  * Encrypt a private key using a password
  * Returns base64-encoded string containing: salt + iv + authTag + ciphertext
  */
-export async function encryptPrivateKey(
-  privateKey: string,
-  password: string
-): Promise<string> {
+export async function encryptPrivateKey(privateKey: string, password: string): Promise<string> {
   const salt = randomBytes(SALT_LENGTH);
   const iv = randomBytes(IV_LENGTH);
   const key = await deriveKey(password, salt);
 
   const cipher = createCipheriv(ALGORITHM, key, iv);
-  const encrypted = Buffer.concat([
-    cipher.update(privateKey, "utf8"),
-    cipher.final(),
-  ]);
+  const encrypted = Buffer.concat([cipher.update(privateKey, "utf8"), cipher.final()]);
   const authTag = cipher.getAuthTag();
 
   // Combine salt + iv + authTag + ciphertext
@@ -45,10 +39,7 @@ export async function encryptPrivateKey(
  * Decrypt a private key using a password
  * Input is base64-encoded string containing: salt + iv + authTag + ciphertext
  */
-export async function decryptPrivateKey(
-  encryptedData: string,
-  password: string
-): Promise<string> {
+export async function decryptPrivateKey(encryptedData: string, password: string): Promise<string> {
   const combined = Buffer.from(encryptedData, "base64");
 
   // Extract components
@@ -56,21 +47,18 @@ export async function decryptPrivateKey(
   const iv = combined.subarray(SALT_LENGTH, SALT_LENGTH + IV_LENGTH);
   const authTag = combined.subarray(
     SALT_LENGTH + IV_LENGTH,
-    SALT_LENGTH + IV_LENGTH + AUTH_TAG_LENGTH
+    SALT_LENGTH + IV_LENGTH + AUTH_TAG_LENGTH,
   );
-  const ciphertext = combined.subarray(
-    SALT_LENGTH + IV_LENGTH + AUTH_TAG_LENGTH
-  );
+  const ciphertext = combined.subarray(SALT_LENGTH + IV_LENGTH + AUTH_TAG_LENGTH);
 
   const key = await deriveKey(password, salt);
 
-  const decipher = createDecipheriv(ALGORITHM, key, iv);
+  const decipher = createDecipheriv(ALGORITHM, key, iv, {
+    authTagLength: AUTH_TAG_LENGTH,
+  });
   decipher.setAuthTag(authTag);
 
-  const decrypted = Buffer.concat([
-    decipher.update(ciphertext),
-    decipher.final(),
-  ]);
+  const decrypted = Buffer.concat([decipher.update(ciphertext), decipher.final()]);
 
   return decrypted.toString("utf8");
 }
