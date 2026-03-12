@@ -97,18 +97,21 @@ decibel-cli markets book <symbol>    # Order book
 
 ### Affiliate
 
-Generate affiliate referral codes from ETH, Solana, or Aptos wallet addresses. Supports multi-chain input — ETH and Solana addresses are automatically derived to Aptos addresses using the derivable account pattern (scheme 0x05).
+Generate and manage referral codes from ETH, Solana, or Aptos wallet addresses. Supports multi-chain input — ETH and Solana addresses are automatically derived to Aptos addresses using the derivable account pattern (scheme 0x05).
+
+#### `create-codes`
+
+Create referral codes for affiliates (KOLs/influencers) or builders (app developers).
 
 ```bash
-# Single entry
+# Affiliate code (default)
 decibel-cli affiliate create-codes --name "Alice" --address 0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045
+
+# Builder code (non-affiliate)
+decibel-cli affiliate create-codes --builder --name "AppDev" --address 0x...
 
 # Batch from CSV file
 decibel-cli affiliate create-codes --file affiliates.csv
-
-# With collision check (read-only, outputs SQL)
-decibel-cli affiliate create-codes --file affiliates.csv \
-  --clickhouse-url https://clickhouse.example.com
 
 # With collision check + auto-insert into ClickHouse
 decibel-cli affiliate create-codes --file affiliates.csv \
@@ -127,11 +130,17 @@ Charlie,0x0000000000000000000000000000000000000000000000000000000000000001
 | Option                   | Description                                                                  |
 | ------------------------ | ---------------------------------------------------------------------------- |
 | `--file <path>`          | CSV file with `name,address` columns                                         |
-| `--name <name>`          | Affiliate name (single entry mode)                                           |
+| `--name <name>`          | Name (single entry mode)                                                     |
 | `--address <address>`    | Wallet address: ETH (0x+40 hex), Solana (base58), or Aptos (0x+64 hex)       |
+| `--builder`              | Create non-affiliate builder codes (`is_affiliate=false`)                    |
 | `--max-usage <n>`        | Max redemptions per code (default: 100)                                      |
 | `--clickhouse-url <url>` | ClickHouse URL for collision check (or set `DECIBEL_CLICKHOUSE_URL` env var) |
 | `--execute`              | Insert codes into ClickHouse (requires `--clickhouse-url`)                   |
+
+**Affiliate vs Builder codes:**
+
+- **Affiliate** (`is_affiliate=true`, default) — for KOLs/influencers. Always visible to users. Address collision check prevents duplicate affiliate codes per address.
+- **Builder** (`--builder`, `is_affiliate=false`) — for app developers building on Decibel. Only visible to users meeting the volume threshold. No address collision check (a builder can have multiple codes).
 
 **Modes of operation:**
 
@@ -139,10 +148,29 @@ Charlie,0x0000000000000000000000000000000000000000000000000000000000000001
 2. **Collision check only (`--clickhouse-url`):** Connects to ClickHouse read-only to check for code/address collisions, then outputs INSERT SQL for non-colliding entries.
 3. **Execute (`--clickhouse-url --execute`):** Checks collisions, inserts one-by-one, verifies each insert, and prints reconciliation SQL for any failures.
 
-When a collision is detected:
+#### `update-max-usage`
 
-- **Code collision** — silently regenerates a new unique code
-- **Address already has an affiliate code** — skips with a runbook (shows existing code, usage stats, and fix SQL if the code is maxed out)
+Update the `max_usage` limit on existing referral codes. Requires a ClickHouse connection to look up current state.
+
+```bash
+# Look up by code and output SQL
+decibel-cli affiliate update-max-usage --code ABC123 --max-usage 500 \
+  --clickhouse-url https://clickhouse.example.com
+
+# Look up by owner address and execute
+decibel-cli affiliate update-max-usage --address 0x... --max-usage 500 \
+  --clickhouse-url https://clickhouse.example.com --execute
+```
+
+| Option                   | Description                                              |
+| ------------------------ | -------------------------------------------------------- |
+| `--code <code>`          | Referral code to update                                  |
+| `--address <address>`    | Owner address — updates all codes for this address       |
+| `--max-usage <n>`        | New max usage value (required)                           |
+| `--clickhouse-url <url>` | ClickHouse URL (or set `DECIBEL_CLICKHOUSE_URL` env var) |
+| `--execute`              | Apply update to ClickHouse                               |
+
+The command displays the current state (code, owner, max_usage, times redeemed, affiliate status), validates that the new max_usage is not below current redemptions, and either outputs SQL or executes the update with verification.
 
 > **Warning — ClickHouse write access**
 >
