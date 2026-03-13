@@ -401,6 +401,7 @@ export function createAffiliateCommand(): Command {
       "Wallet address: ETH (0x + 40 hex), Solana (base58), or Aptos (0x + 64 hex)",
     )
     .option("--builder", "Create non-affiliate builder codes (is_affiliate=false)")
+    .option("--count <n>", "Number of codes to generate per address", "1")
     .option("--max-usage <n>", "Max usage per code", "100")
     .option(
       "--clickhouse-url <url>",
@@ -413,6 +414,7 @@ export function createAffiliateCommand(): Command {
         name?: string;
         address?: string;
         builder?: boolean;
+        count: string;
         maxUsage: string;
         clickhouseUrl?: string;
         execute?: boolean;
@@ -435,6 +437,12 @@ export function createAffiliateCommand(): Command {
             process.exit(1);
           }
 
+          const count = parseInt(options.count, 10);
+          if (isNaN(count) || count <= 0 || count > 20) {
+            printError("--count must be a positive integer (max 20)");
+            process.exit(1);
+          }
+
           const maxUsage = parseInt(options.maxUsage, 10);
           if (isNaN(maxUsage) || maxUsage <= 0) {
             printError("--max-usage must be a positive integer");
@@ -451,16 +459,16 @@ export function createAffiliateCommand(): Command {
           }
 
           // Resolve addresses and generate codes
-          const codes = generateUniqueCodes(inputs.length);
-          let entries: AffiliateEntry[] = inputs.map((input, i) => {
+          const codes = generateUniqueCodes(inputs.length * count);
+          let entries: AffiliateEntry[] = inputs.flatMap((input, i) => {
             const { aptosAddress, addressType } = resolveAptosAddress(input.address);
-            return {
+            return Array.from({ length: count }, (_, j) => ({
               name: input.name,
               sourceAddress: input.address,
               aptosAddress,
               addressType,
-              code: codes[i],
-            };
+              code: codes[i * count + j],
+            }));
           });
 
           // Check collisions if ClickHouse URL is available
