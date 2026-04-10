@@ -21,7 +21,6 @@ import { config } from "dotenv";
 
 // Import command modules
 import { createAccountCommand } from "./commands/account/index.js";
-import { createAffiliateCommand } from "./commands/affiliate/index.js";
 import { createMarketsCommand } from "./commands/markets/index.js";
 import { createTradeCommand } from "./commands/trade/index.js";
 
@@ -39,7 +38,6 @@ program
 
 // Add command groups
 program.addCommand(createAccountCommand());
-program.addCommand(createAffiliateCommand());
 program.addCommand(createMarketsCommand());
 program.addCommand(createTradeCommand());
 

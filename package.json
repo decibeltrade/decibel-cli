@@ -5,7 +5,6 @@
   "dependencies": {
     "@aptos-labs/gas-station-client": "^2.0.3",
     "@aptos-labs/ts-sdk": "^5.2.1",
-    "@clickhouse/client": "^1.17.0",
     "@decibeltrade/sdk": "0.5.0",
     "@modelcontextprotocol/sdk": "^1.0.0",
     "better-sqlite3": "^11.0.0",
