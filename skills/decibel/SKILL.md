@@ -23,7 +23,7 @@ config:
     - name: DECIBEL_ACCOUNT_ALIAS
       description: Account alias from stored accounts (alternative to env vars)
     - name: DECIBEL_NETWORK
-      description: Network to use (testnet, netna, local). Defaults to testnet.
+      description: Network to use (mainnet, testnet, netna, local). Defaults to testnet.
     - name: DECIBEL_NODE_API_KEY
       description: Node API key for higher rate limits (from https://geomi.dev)
     - name: DECIBEL_GAS_STATION_API_KEY
@@ -131,11 +131,27 @@ decibel-cli trade order limit buy 0.01 BTC/USD 50000
 # Place market order
 decibel-cli trade order market buy 0.01 BTC/USD
 
-# Cancel order
-decibel-cli trade cancel <orderId> --market BTC/USD
+# Stop orders
+decibel-cli trade order stop-limit sell 0.01 BTC/USD 59000 60000
+decibel-cli trade order stop-market sell 0.01 BTC/USD 60000
 
-# Set leverage
+# TWAP order (buy 1 BTC over 1 hour, every minute)
+decibel-cli trade order twap buy 1 BTC/USD --duration 3600 --frequency 60
+
+# Close position
+decibel-cli trade close BTC/USD
+
+# TP/SL
+decibel-cli trade tp-sl set BTC/USD --tp-trigger 100000 --sl-trigger 60000
+decibel-cli trade tp-sl ls BTC/USD
+
+# Cancel orders
+decibel-cli trade cancel <orderId> --market BTC/USD
+decibel-cli trade cancel-twap <orderId> --market BTC/USD
+
+# Set leverage and margin type
 decibel-cli trade set-leverage BTC/USD 10
+decibel-cli trade set-margin BTC/USD isolated
 ```
 
 ### Market Data
@@ -150,12 +166,12 @@ decibel-cli markets book BTC/USD -w     # Watch order book
 
 ## Global Options
 
-| Option              | Description                                |
-| ------------------- | ------------------------------------------ |
-| `--json`            | Output in JSON format (for scripting)      |
-| `--network <name>`  | Use specific network (testnet/netna/local) |
-| `--account <alias>` | Use specific account                       |
-| `-h, --help`        | Show help                                  |
+| Option              | Description                                        |
+| ------------------- | -------------------------------------------------- |
+| `--json`            | Output in JSON format (for scripting)              |
+| `--network <name>`  | Use specific network (mainnet/testnet/netna/local) |
+| `--account <alias>` | Use specific account                               |
+| `-h, --help`        | Show help                                          |
 
 ## MCP Server Mode
 

@@ -37,7 +37,8 @@ import {
 } from "../../src/storage/accounts.js";
 
 // Test private key (DO NOT use in production - this is a randomly generated test key)
-const TEST_PRIVATE_KEY = "0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef";
+const TEST_PRIVATE_KEY =
+  "ed25519-priv-0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef";
 const TEST_SUBACCOUNT_ADDRESS =
   "0xabcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890";
 

@@ -232,8 +232,11 @@ export async function getAptosAccount(
   let privateKey: string;
 
   // Check if the key is encrypted (encrypted keys are longer base64 strings)
-  // Plain keys start with 0x
-  if (storedAccount.encryptedKey.startsWith("0x")) {
+  // Plain keys start with 0x or ed25519-priv- (AIP-80 format)
+  if (
+    storedAccount.encryptedKey.startsWith("0x") ||
+    storedAccount.encryptedKey.startsWith("ed25519-priv-")
+  ) {
     privateKey = storedAccount.encryptedKey;
   } else {
     if (!password) {

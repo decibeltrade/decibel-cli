@@ -28,18 +28,33 @@ Add this to your Claude Desktop or MCP client configuration:
 
 ### Available MCP Tools
 
-| Tool                 | Description               |
-| -------------------- | ------------------------- |
-| `place_limit_order`  | Place a limit order       |
-| `place_market_order` | Place a market order      |
-| `cancel_order`       | Cancel a specific order   |
-| `set_leverage`       | Set leverage for a market |
-| `get_positions`      | Get open positions        |
-| `get_orders`         | Get open orders           |
-| `get_markets`        | List all markets          |
-| `get_price`          | Get current price         |
-| `get_orderbook`      | Get order book            |
-| `get_balances`       | Get account balances      |
+| Tool                      | Description                      |
+| ------------------------- | -------------------------------- |
+| `place_limit_order`       | Place a limit order              |
+| `place_market_order`      | Place a market order             |
+| `place_stop_limit_order`  | Place a stop limit order         |
+| `place_stop_market_order` | Place a stop market order        |
+| `place_twap_order`        | Place a TWAP order               |
+| `close_position`          | Close an open position           |
+| `cancel_order`            | Cancel a specific order          |
+| `cancel_all_orders`       | Cancel all open orders           |
+| `cancel_twap_order`       | Cancel a TWAP order              |
+| `place_tp_sl`             | Set TP/SL for a position         |
+| `cancel_tp_sl`            | Cancel a TP/SL order             |
+| `get_tp_sl`               | Get TP/SL orders for a position  |
+| `set_leverage`            | Set leverage for a market        |
+| `set_margin_type`         | Switch cross/isolated margin     |
+| `get_positions`           | Get open positions               |
+| `get_orders`              | Get open orders                  |
+| `get_active_twaps`        | Get active TWAP orders           |
+| `get_markets`             | List all markets                 |
+| `get_price`               | Get current price                |
+| `get_orderbook`           | Get order book snapshot          |
+| `get_balances`            | Get account balances             |
+| `get_trade_history`       | Get trade fill history           |
+| `get_order_history`       | Get order history                |
+| `get_twap_history`        | Get TWAP order history           |
+| `get_funding_history`     | Get funding rate payment history |
 
 ---
 
@@ -302,12 +317,12 @@ decibel-cli trade cancel-all --yes
 
 ### Global Options
 
-| Option                | Description                                       |
-| --------------------- | ------------------------------------------------- |
-| `--network <network>` | Network: testnet, netna, local (default: testnet) |
-| `--json`              | Output in JSON format (for scripting/AI agents)   |
-| `-h, --help`          | Show help                                         |
-| `-V, --version`       | Show version                                      |
+| Option                | Description                                                |
+| --------------------- | ---------------------------------------------------------- |
+| `--network <network>` | Network: mainnet, testnet, netna, local (default: testnet) |
+| `--json`              | Output in JSON format (for scripting/AI agents)            |
+| `-h, --help`          | Show help                                                  |
+| `-V, --version`       | Show version                                               |
 
 ### Account Commands
 
@@ -321,16 +336,29 @@ decibel-cli trade cancel-all --yes
 
 ### Trade Commands
 
-| Command                                            | Description           |
-| -------------------------------------------------- | --------------------- |
-| `trade order limit <side> <size> <symbol> <price>` | Place limit order     |
-| `trade order market <side> <size> <symbol>`        | Place market order    |
-| `trade cancel <orderId>`                           | Cancel specific order |
-| `trade cancel-all`                                 | Cancel all orders     |
-| `trade set-leverage <symbol> <leverage>`           | Set leverage          |
-| `trade positions`                                  | View open positions   |
-| `trade orders`                                     | View open orders      |
-| `trade history`                                    | View trade history    |
+| Command                                                             | Description                  |
+| ------------------------------------------------------------------- | ---------------------------- |
+| `trade order limit <side> <size> <symbol> <price>`                  | Place limit order            |
+| `trade order market <side> <size> <symbol>`                         | Place market order           |
+| `trade order stop-limit <side> <size> <symbol> <price> <stopPrice>` | Place stop limit order       |
+| `trade order stop-market <side> <size> <symbol> <stopPrice>`        | Place stop market order      |
+| `trade order twap <side> <size> <symbol> --duration <s> --freq <s>` | Place TWAP order             |
+| `trade close <symbol>`                                              | Close position               |
+| `trade cancel <orderId>`                                            | Cancel specific order        |
+| `trade cancel-twap <orderId>`                                       | Cancel TWAP order            |
+| `trade cancel-all`                                                  | Cancel all orders            |
+| `trade tp-sl set <symbol>`                                          | Set TP/SL for position       |
+| `trade tp-sl ls <symbol>`                                           | List TP/SL for position      |
+| `trade tp-sl cancel <orderId>`                                      | Cancel TP/SL order           |
+| `trade set-leverage <symbol> <leverage>`                            | Set leverage                 |
+| `trade set-margin <symbol> <type>`                                  | Switch cross/isolated margin |
+| `trade positions`                                                   | View open positions          |
+| `trade orders`                                                      | View open orders             |
+| `trade active-twaps`                                                | View active TWAP orders      |
+| `trade history`                                                     | View trade fill history      |
+| `trade order-history`                                               | View order history           |
+| `trade twap-history`                                                | View TWAP history            |
+| `trade funding-history`                                             | View funding history         |
 
 _Side options: `long`, `short`, `buy`, `sell`_
 
@@ -349,6 +377,6 @@ _Side options: `long`, `short`, `buy`, `sell`_
 - **Visual Tables** - Color-coded tables for positions, orders, balances
 - **Orderbook Depth Bars** - ASCII visualization of market depth
 - **API Wallet Support** - Trade on behalf of subaccounts without deposit/withdraw risk
-- **MCP Integration** - 10 tools for AI agent integration
+- **MCP Integration** - 25 tools for AI agent integration
 - **Multi-Account Support** - Store and switch between accounts
 - **JSON Output** - `--json` flag for programmatic access

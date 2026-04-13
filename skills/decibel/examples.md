@@ -110,10 +110,14 @@ decibel-cli trade positions -w
 ### 6. Close Position
 
 ```bash
-# Close long with market sell
-decibel-cli trade order market sell 0.01 BTC/USD
+# Close full position with one command
+decibel-cli trade close BTC/USD
 
-# Or place limit close
+# Partial close
+decibel-cli trade close BTC/USD --size 0.005
+
+# Or manually with market/limit orders
+decibel-cli trade order market sell 0.01 BTC/USD
 decibel-cli trade order limit sell 0.01 BTC/USD 55000
 ```
 
@@ -131,14 +135,18 @@ decibel-cli trade set-leverage BTC/USD 10
 # 3. Place limit long order slightly below market
 decibel-cli trade order limit long 0.01 BTC/USD 49500
 
-# 4. Check order status
-decibel-cli trade orders
+# 4. Set TP/SL for protection
+decibel-cli trade tp-sl set BTC/USD --tp-trigger 55000 --tp-limit 54500 --sl-trigger 47000 --sl-limit 46500
 
-# 5. Watch position once filled
+# 5. Check order status and TP/SL
+decibel-cli trade orders
+decibel-cli trade tp-sl ls BTC/USD
+
+# 6. Watch position once filled
 decibel-cli trade positions -w
 
-# 6. Close with limit when ready
-decibel-cli trade order limit short 0.01 BTC/USD 52000 --reduce-only
+# 7. Close when ready
+decibel-cli trade close BTC/USD
 ```
 
 ---
@@ -152,11 +160,62 @@ decibel-cli markets price ETH/USD
 # 2. Open short position
 decibel-cli trade order market short 0.1 ETH/USD
 
-# 3. Monitor position
+# 3. Set stop-loss protection
+decibel-cli trade tp-sl set ETH/USD --sl-trigger 4000 --sl-limit 4050
+
+# 4. Monitor position
 decibel-cli trade positions -w
 
-# 4. Close short with long
-decibel-cli trade order market long 0.1 ETH/USD
+# 5. Close short
+decibel-cli trade close ETH/USD
+```
+
+---
+
+## TWAP Order Workflow
+
+```bash
+# Buy 1 BTC over 1 hour, executing every minute
+decibel-cli trade order twap buy 1 BTC/USD --duration 3600 --frequency 60
+
+# Check active TWAPs
+decibel-cli trade active-twaps
+
+# Cancel a TWAP if needed
+decibel-cli trade cancel-twap <orderId> --market BTC/USD
+
+# View TWAP history
+decibel-cli trade twap-history
+```
+
+---
+
+## Stop Orders
+
+```bash
+# Stop-loss: sell if BTC drops to 60000, execute at 59000
+decibel-cli trade order stop-limit sell 0.01 BTC/USD 59000 60000
+
+# Stop market: sell immediately if BTC drops to 60000
+decibel-cli trade order stop-market sell 0.01 BTC/USD 60000 --reduce-only
+
+# Breakout entry: buy if BTC breaks above 70000
+decibel-cli trade order stop-market buy 0.01 BTC/USD 70000
+```
+
+---
+
+## Margin Management
+
+```bash
+# Switch to isolated margin for ETH
+decibel-cli trade set-margin ETH/USD isolated
+
+# Set leverage
+decibel-cli trade set-leverage ETH/USD 5
+
+# Switch back to cross margin
+decibel-cli trade set-margin ETH/USD cross
 ```
 
 ---

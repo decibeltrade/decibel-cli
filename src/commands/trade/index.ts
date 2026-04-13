@@ -1,13 +1,48 @@
-import { TimeInForce } from "@decibeltrade/sdk";
 import { Command } from "commander";
 import inquirer from "inquirer";
 
 import {
-  createReadDex,
-  createWriteDex,
-  DexOptions,
-  resolveSubaccountAddress,
-} from "../../services/dex-factory.js";
+  cancelAllOrders,
+  CancelAllOrdersSchema,
+  cancelOrder,
+  CancelOrderSchema,
+  cancelTpSl,
+  CancelTpSlSchema,
+  cancelTwapOrder,
+  CancelTwapOrderSchema,
+  closePosition,
+  ClosePositionSchema,
+  getActiveTwaps,
+  getFundingHistory,
+  GetFundingHistorySchema,
+  getOrderHistory,
+  GetOrderHistorySchema,
+  getOrders,
+  getPositions,
+  getTpSl,
+  GetTpSlSchema,
+  getTradeHistory,
+  GetTradeHistorySchema,
+  getTwapHistory,
+  GetTwapHistorySchema,
+  placeLimitOrder,
+  PlaceLimitOrderSchema,
+  placeMarketOrder,
+  PlaceMarketOrderSchema,
+  placeStopLimitOrder,
+  PlaceStopLimitOrderSchema,
+  placeStopMarketOrder,
+  PlaceStopMarketOrderSchema,
+  placeTpSl,
+  PlaceTpSlSchema,
+  placeTwapOrder,
+  PlaceTwapOrderSchema,
+  setLeverage,
+  SetLeverageSchema,
+  setMarginType,
+  SetMarginTypeSchema,
+} from "../../actions/index.js";
+import { createReadDex, DexOptions, resolveSubaccountAddress } from "../../services/dex-factory.js";
 import { NetworkName } from "../../utils/config.js";
 import {
   createTable,
@@ -28,20 +63,8 @@ interface TradeCommandOptions extends OutputOptions {
   watch?: boolean;
 }
 
-/**
- * Validate and parse the side parameter
- * @returns true for buy/long, false for sell/short
- * @throws Error if invalid side
- */
-function validateSide(side: string): boolean {
-  const lowerSide = side.toLowerCase();
-  if (["buy", "long"].includes(lowerSide)) {
-    return true;
-  }
-  if (["sell", "short"].includes(lowerSide)) {
-    return false;
-  }
-  throw new Error(`Invalid side: "${side}". Must be one of: buy, long, sell, short`);
+function dexOpts(options: TradeCommandOptions): DexOptions {
+  return { network: options.network, accountAlias: options.account };
 }
 
 export function createTradeCommand(): Command {
@@ -73,69 +96,17 @@ export function createTradeCommand(): Command {
         },
       ) => {
         try {
-          const isBuy = validateSide(side);
-
-          const sizeNum = parseFloat(size);
-          const priceNum = parseFloat(price);
-
-          if (isNaN(sizeNum) || sizeNum <= 0) {
-            printError("Invalid size");
-            process.exit(1);
-          }
-          if (isNaN(priceNum) || priceNum <= 0) {
-            printError("Invalid price");
-            process.exit(1);
-          }
-
-          // Parse time in force
-          let timeInForce: TimeInForce = TimeInForce.GoodTillCanceled;
-          if (options.tif) {
-            switch (options.tif.toLowerCase()) {
-              case "gtc":
-                timeInForce = TimeInForce.GoodTillCanceled;
-                break;
-              case "post-only":
-              case "alo":
-                timeInForce = TimeInForce.PostOnly;
-                break;
-              case "ioc":
-                timeInForce = TimeInForce.ImmediateOrCancel;
-                break;
-              default:
-                printError(`Invalid time in force: ${options.tif}. Use gtc, post-only, or ioc`);
-                process.exit(1);
-            }
-          }
-
-          const writeDex = await createWriteDex({
-            network: options.network,
-            accountAlias: options.account,
-          });
-
-          // Get market config for decimals and tick size
-          const readDex = createReadDex({ network: options.network });
-          const markets = await readDex.markets.getAll();
-          const market = markets.find((m) => m.market_name.toLowerCase() === symbol.toLowerCase());
-
-          if (!market) {
-            printError(`Market "${symbol}" not found`);
-            process.exit(1);
-          }
-
-          // Convert human-readable values to chain units
-          const chainPrice = Math.round(priceNum * 10 ** market.px_decimals);
-          const chainSize = Math.round(sizeNum * 10 ** market.sz_decimals);
-
-          const result = await writeDex.placeOrder({
-            marketName: symbol,
-            price: chainPrice,
-            size: chainSize,
-            isBuy,
-            timeInForce,
-            isReduceOnly: options.reduceOnly ?? false,
+          const params = PlaceLimitOrderSchema.parse({
+            side,
+            size: parseFloat(size),
+            symbol,
+            price: parseFloat(price),
+            timeInForce: options.tif,
+            reduceOnly: options.reduceOnly,
             clientOrderId: options.clientId,
-            tickSize: market.tick_size,
           });
+
+          const result = await placeLimitOrder(params, dexOpts(options));
 
           formatOutput(
             result,
@@ -183,57 +154,16 @@ export function createTradeCommand(): Command {
         },
       ) => {
         try {
-          const isBuy = validateSide(side);
-
-          const sizeNum = parseFloat(size);
-          const slippage = parseFloat(options.slippage || "1") / 100;
-
-          if (isNaN(sizeNum) || sizeNum <= 0) {
-            printError("Invalid size");
-            process.exit(1);
-          }
-
-          const writeDex = await createWriteDex({
-            network: options.network,
-            accountAlias: options.account,
-          });
-
-          // Get current price for market order
-          const readDex = createReadDex({ network: options.network });
-          const prices = await readDex.marketPrices.getByName({ marketName: symbol });
-          const currentPrice = prices[0]?.mark_px;
-
-          if (!currentPrice) {
-            printError(`Could not get current price for ${symbol}`);
-            process.exit(1);
-          }
-
-          // Get market config for decimals and tick size
-          const markets = await readDex.markets.getAll();
-          const market = markets.find((m) => m.market_name.toLowerCase() === symbol.toLowerCase());
-
-          if (!market) {
-            printError(`Market "${symbol}" not found`);
-            process.exit(1);
-          }
-
-          // Calculate limit price with slippage for market order
-          const limitPrice = isBuy ? currentPrice * (1 + slippage) : currentPrice * (1 - slippage);
-
-          // Convert human-readable values to chain units
-          const chainPrice = Math.round(limitPrice * 10 ** market.px_decimals);
-          const chainSize = Math.round(sizeNum * 10 ** market.sz_decimals);
-
-          const result = await writeDex.placeOrder({
-            marketName: symbol,
-            price: chainPrice,
-            size: chainSize,
-            isBuy,
-            timeInForce: TimeInForce.ImmediateOrCancel,
-            isReduceOnly: options.reduceOnly ?? false,
+          const params = PlaceMarketOrderSchema.parse({
+            side,
+            size: parseFloat(size),
+            symbol,
+            slippage: options.slippage ? parseFloat(options.slippage) : undefined,
+            reduceOnly: options.reduceOnly,
             clientOrderId: options.clientId,
-            tickSize: market.tick_size,
           });
+
+          const result = await placeMarketOrder(params, dexOpts(options));
 
           formatOutput(
             result,
@@ -259,6 +189,178 @@ export function createTradeCommand(): Command {
       },
     );
 
+  // Place stop limit order
+  order
+    .command("stop-limit <side> <size> <symbol> <price> <stopPrice>")
+    .description("Place a stop limit order (triggers at stop price, executes at limit price)")
+    .option("--json", "Output in JSON format")
+    .option("--network <network>", "Network to use (testnet, netna, local)")
+    .option("--account <alias>", "Use specific account")
+    .option("--tif <tif>", "Time in force: gtc, post-only, ioc", "gtc")
+    .option("--reduce-only", "Reduce-only order")
+    .option("--client-id <id>", "Client order ID")
+    .action(
+      async (
+        side: string,
+        size: string,
+        symbol: string,
+        price: string,
+        stopPrice: string,
+        options: TradeCommandOptions & {
+          tif?: string;
+          reduceOnly?: boolean;
+          clientId?: string;
+        },
+      ) => {
+        try {
+          const params = PlaceStopLimitOrderSchema.parse({
+            side,
+            size: parseFloat(size),
+            symbol,
+            price: parseFloat(price),
+            stopPrice: parseFloat(stopPrice),
+            timeInForce: options.tif,
+            reduceOnly: options.reduceOnly,
+            clientOrderId: options.clientId,
+          });
+
+          const result = await placeStopLimitOrder(params, dexOpts(options));
+
+          formatOutput(
+            result,
+            (r) => {
+              if (r.success) {
+                printSuccess(`Stop limit order placed successfully`);
+                console.log(`Order ID: ${r.orderId ?? "N/A"}`);
+                console.log(`Transaction: ${r.transactionHash}`);
+              } else {
+                printError(`Order failed: ${r.error}`);
+              }
+            },
+            options,
+          );
+
+          if (!result.success) {
+            process.exit(1);
+          }
+        } catch (error) {
+          printError(error instanceof Error ? error.message : String(error));
+          process.exit(1);
+        }
+      },
+    );
+
+  // Place stop market order
+  order
+    .command("stop-market <side> <size> <symbol> <stopPrice>")
+    .description("Place a stop market order (triggers at stop price, executes immediately)")
+    .option("--json", "Output in JSON format")
+    .option("--network <network>", "Network to use (testnet, netna, local)")
+    .option("--account <alias>", "Use specific account")
+    .option("--reduce-only", "Reduce-only order")
+    .option("--slippage <pct>", "Slippage percentage from stop price", "1")
+    .option("--client-id <id>", "Client order ID")
+    .action(
+      async (
+        side: string,
+        size: string,
+        symbol: string,
+        stopPrice: string,
+        options: TradeCommandOptions & {
+          reduceOnly?: boolean;
+          slippage?: string;
+          clientId?: string;
+        },
+      ) => {
+        try {
+          const params = PlaceStopMarketOrderSchema.parse({
+            side,
+            size: parseFloat(size),
+            symbol,
+            stopPrice: parseFloat(stopPrice),
+            slippage: options.slippage ? parseFloat(options.slippage) : undefined,
+            reduceOnly: options.reduceOnly,
+            clientOrderId: options.clientId,
+          });
+
+          const result = await placeStopMarketOrder(params, dexOpts(options));
+
+          formatOutput(
+            result,
+            (r) => {
+              if (r.success) {
+                printSuccess(`Stop market order placed successfully`);
+                console.log(`Order ID: ${r.orderId ?? "N/A"}`);
+                console.log(`Transaction: ${r.transactionHash}`);
+              } else {
+                printError(`Order failed: ${r.error}`);
+              }
+            },
+            options,
+          );
+
+          if (!result.success) {
+            process.exit(1);
+          }
+        } catch (error) {
+          printError(error instanceof Error ? error.message : String(error));
+          process.exit(1);
+        }
+      },
+    );
+
+  // Place TWAP order
+  order
+    .command("twap <side> <size> <symbol>")
+    .description("Place a TWAP order (time-weighted average price)")
+    .option("--json", "Output in JSON format")
+    .option("--network <network>", "Network to use (testnet, netna, local)")
+    .option("--account <alias>", "Use specific account")
+    .requiredOption("--duration <seconds>", "Total duration in seconds")
+    .requiredOption("--frequency <seconds>", "Execution frequency in seconds")
+    .option("--reduce-only", "Reduce-only order")
+    .option("--client-id <id>", "Client order ID")
+    .action(
+      async (
+        side: string,
+        size: string,
+        symbol: string,
+        options: TradeCommandOptions & {
+          duration: string;
+          frequency: string;
+          reduceOnly?: boolean;
+          clientId?: string;
+        },
+      ) => {
+        try {
+          const params = PlaceTwapOrderSchema.parse({
+            side,
+            size: parseFloat(size),
+            symbol,
+            duration: parseInt(options.duration, 10),
+            frequency: parseInt(options.frequency, 10),
+            reduceOnly: options.reduceOnly,
+            clientOrderId: options.clientId,
+          });
+
+          const result = await placeTwapOrder(params, dexOpts(options));
+
+          formatOutput(
+            result,
+            (r) => {
+              printSuccess(`TWAP order placed successfully`);
+              console.log(`Order ID: ${r.orderId ?? "N/A"}`);
+              console.log(`Transaction: ${r.transactionHash}`);
+            },
+            options,
+          );
+        } catch (error) {
+          printError(error instanceof Error ? error.message : String(error));
+          process.exit(1);
+        }
+      },
+    );
+
   // Close position
   trade
     .command("close <symbol>")
@@ -277,85 +379,23 @@ export function createTradeCommand(): Command {
         },
       ) => {
         try {
-          const dexOptions: DexOptions = {
-            network: options.network,
-            accountAlias: options.account,
-          };
-
-          const subaccountAddr = resolveSubaccountAddress(dexOptions);
-
-          const readDex = createReadDex(dexOptions);
-
-          // Get current positions
-          const positions = await readDex.userPositions.getByAddr({
-            subAddr: subaccountAddr,
-            limit: 100,
+          const params = ClosePositionSchema.parse({
+            symbol,
+            slippage: options.slippage ? parseFloat(options.slippage) : undefined,
+            size: options.size ? parseFloat(options.size) : undefined,
           });
 
-          // Find position for this market
-          // Get markets to map address to name
-          const markets = await readDex.markets.getAll();
-          const market = markets.find((m) => m.market_name.toLowerCase() === symbol.toLowerCase());
-
-          if (!market) {
-            printError(`Market "${symbol}" not found`);
-            process.exit(1);
-          }
-
-          const position = positions.find(
-            (p) => p.market.toLowerCase() === market.market_addr.toLowerCase(),
+          const { isLong, closeSize, limitPrice, orderResult } = await closePosition(
+            params,
+            dexOpts(options),
           );
-
-          if (!position || position.size === 0) {
-            printError(`No open position found for ${symbol}`);
-            process.exit(1);
-          }
-
-          const positionSize = Math.abs(position.size);
-          const isLong = position.size > 0;
-          const closeSize = options.size ? parseFloat(options.size) : positionSize;
-
-          if (closeSize > positionSize) {
-            printError(`Close size ${closeSize} exceeds position size ${positionSize}`);
-            process.exit(1);
-          }
-
-          // Get current price
-          const prices = await readDex.marketPrices.getByName({ marketName: symbol });
-          const currentPrice = prices[0]?.mark_px;
-
-          if (!currentPrice) {
-            printError(`Could not get current price for ${symbol}`);
-            process.exit(1);
-          }
-
-          const slippage = parseFloat(options.slippage || "1") / 100;
-
-          // To close a long, we sell (isBuy=false). To close a short, we buy (isBuy=true).
-          const isBuy = !isLong;
-          const limitPrice = isBuy ? currentPrice * (1 + slippage) : currentPrice * (1 - slippage);
-
-          const chainPrice = Math.round(limitPrice * 10 ** market.px_decimals);
-          const chainSize = Math.round(closeSize * 10 ** market.sz_decimals);
 
           console.log(
             `Closing ${isLong ? "LONG" : "SHORT"} position: ${closeSize} ${symbol} at ~${formatPrice(limitPrice)}`,
           );
 
-          const writeDex = await createWriteDex(dexOptions);
-
-          const result = await writeDex.placeOrder({
-            marketName: symbol,
-            price: chainPrice,
-            size: chainSize,
-            isBuy,
-            timeInForce: TimeInForce.ImmediateOrCancel,
-            isReduceOnly: true, // Always reduce-only for close command
-            tickSize: market.tick_size,
-          });
-
           formatOutput(
-            result,
+            orderResult,
             (r) => {
               if (r.success) {
                 printSuccess(`Position closed successfully`);
@@ -367,7 +407,7 @@ export function createTradeCommand(): Command {
             options,
           );
 
-          if (!result.success) {
+          if (!orderResult.success) {
             process.exit(1);
           }
         } catch (error) {
@@ -387,21 +427,43 @@ export function createTradeCommand(): Command {
     .option("--account <alias>", "Use specific account")
     .action(async (orderId: string, options: TradeCommandOptions & { market: string }) => {
       try {
-        const writeDex = await createWriteDex({
-          network: options.network,
-          accountAlias: options.account,
-        });
+        const params = CancelOrderSchema.parse({ orderId, symbol: options.market });
 
-        const result = await writeDex.cancelOrder({
-          orderId,
-          marketName: options.market,
-        });
+        const result = await cancelOrder(params, dexOpts(options));
 
         formatOutput(
-          { success: true, transactionHash: result.hash },
-          (r) => {
+          result,
+          () => {
             printSuccess(`Order ${orderId} cancelled`);
-            console.log(`Transaction: ${r.transactionHash}`);
+            console.log(`Transaction: ${result.transactionHash}`);
+          },
+          options,
+        );
+      } catch (error) {
+        printError(error instanceof Error ? error.message : String(error));
+        process.exit(1);
+      }
+    });
+
+  // Cancel TWAP order
+  trade
+    .command("cancel-twap <orderId>")
+    .description("Cancel a TWAP order")
+    .requiredOption("--market <symbol>", "Market symbol")
+    .option("--json", "Output in JSON format")
+    .option("--network <network>", "Network to use (testnet, netna, local)")
+    .option("--account <alias>", "Use specific account")
+    .action(async (orderId: string, options: TradeCommandOptions & { market: string }) => {
+      try {
+        const params = CancelTwapOrderSchema.parse({ orderId, symbol: options.market });
+
+        const result = await cancelTwapOrder(params, dexOpts(options));
+
+        formatOutput(
+          result,
+          () => {
+            printSuccess(`TWAP order ${orderId} cancelled`);
+            console.log(`Transaction: ${result.transactionHash}`);
           },
           options,
         );
@@ -422,36 +484,26 @@ export function createTradeCommand(): Command {
     .option("-y, --yes", "Skip confirmation")
     .action(async (options: TradeCommandOptions & { market?: string; yes?: boolean }) => {
       try {
-        const dexOptions: DexOptions = {
-          network: options.network,
-          accountAlias: options.account,
-        };
-
-        const subaccountAddr = resolveSubaccountAddress(dexOptions);
-
-        const readDex = createReadDex(dexOptions);
+        // Preview how many orders will be cancelled
+        const opts = dexOpts(options);
+        const subaccountAddr = resolveSubaccountAddress(opts);
+        const readDex = createReadDex(opts);
         const ordersResponse = await readDex.userOpenOrders.getByAddr({ subAddr: subaccountAddr });
-        let orders = ordersResponse.items;
+        let orderCount = ordersResponse.items.length;
 
         if (options.market) {
-          // Get markets to resolve symbol to address
           const markets = await readDex.markets.getAll();
           const market = markets.find(
             (m) => m.market_name.toLowerCase() === options.market?.toLowerCase(),
           );
-
-          if (!market) {
-            printError(`Market "${options.market}" not found`);
-            process.exit(1);
+          if (market) {
+            orderCount = ordersResponse.items.filter(
+              (o) => o.market.toLowerCase() === market.market_addr.toLowerCase(),
+            ).length;
           }
-
-          // Filter by market address
-          orders = orders.filter(
-            (o) => o.market.toLowerCase() === market.market_addr.toLowerCase(),
-          );
         }
 
-        if (orders.length === 0) {
+        if (orderCount === 0) {
           console.log("No open orders to cancel");
           return;
         }
@@ -461,7 +513,7 @@ export function createTradeCommand(): Command {
             {
               type: "confirm",
               name: "confirm",
-              message: `Cancel ${orders.length} order(s)?`,
+              message: `Cancel ${orderCount} order(s)?`,
               default: false,
             },
           ])) as { confirm: boolean };
@@ -471,25 +523,11 @@ export function createTradeCommand(): Command {
           }
         }
 
-        const writeDex = await createWriteDex(dexOptions);
-
-        let cancelled = 0;
-        let failed = 0;
-
-        for (const order of orders) {
-          try {
-            await writeDex.cancelOrder({
-              orderId: order.order_id,
-              marketAddr: order.market,
-            });
-            cancelled++;
-          } catch {
-            failed++;
-          }
-        }
+        const params = CancelAllOrdersSchema.parse({ symbol: options.market });
+        const result = await cancelAllOrders(params, opts);
 
         formatOutput(
-          { cancelled, failed, total: orders.length },
+          result,
           (r) => {
             printSuccess(`Cancelled ${r.cancelled} order(s)`);
             if (r.failed > 0) {
@@ -520,49 +558,18 @@ export function createTradeCommand(): Command {
         options: TradeCommandOptions & { cross?: boolean; isolated?: boolean },
       ) => {
         try {
-          const leverageNum = parseInt(leverage, 10);
-          if (isNaN(leverageNum) || leverageNum < 1) {
-            printError("Invalid leverage value");
-            process.exit(1);
-          }
-
-          const dexOptions: DexOptions = {
-            network: options.network,
-            accountAlias: options.account,
-          };
-
-          const readDex = createReadDex(dexOptions);
-          const markets = await readDex.markets.getAll();
-          const market = markets.find((m) => m.market_name.toLowerCase() === symbol.toLowerCase());
-
-          if (!market) {
-            printError(`Market ${symbol} not found`);
-            process.exit(1);
-          }
-
-          if (leverageNum > market.max_leverage) {
-            printError(
-              `Leverage ${leverageNum}x exceeds maximum ${market.max_leverage}x for ${symbol}`,
-            );
-            process.exit(1);
-          }
-
-          const writeDex = await createWriteDex(dexOptions);
-          const subaccountAddr = resolveSubaccountAddress(dexOptions);
-
-          const isCross = !options.isolated;
-
-          await writeDex.configureUserSettingsForMarket({
-            marketAddr: market.market_addr,
-            subaccountAddr,
-            isCross,
-            userLeverage: leverageNum,
+          const params = SetLeverageSchema.parse({
+            symbol,
+            leverage: parseInt(leverage, 10),
+            marginType: options.isolated ? "isolated" : "cross",
           });
 
+          const result = await setLeverage(params, dexOpts(options));
+
           formatOutput(
-            { symbol, leverage: leverageNum, type: isCross ? "cross" : "isolated" },
+            result,
             (r) => {
-              printSuccess(`Leverage set to ${r.leverage}x (${r.type}) for ${r.symbol}`);
+              printSuccess(`Leverage set to ${r.leverage}x (${r.marginType}) for ${r.symbol}`);
             },
             options,
           );
@@ -572,6 +579,195 @@ export function createTradeCommand(): Command {
         }
       },
     );
+
+  // Set margin type
+  trade
+    .command("set-margin <symbol> <type>")
+    .description("Switch margin type for a market (cross or isolated)")
+    .option("--json", "Output in JSON format")
+    .option("--network <network>", "Network to use (testnet, netna, local)")
+    .option("--account <alias>", "Use specific account")
+    .action(async (symbol: string, type: string, options: TradeCommandOptions) => {
+      try {
+        const params = SetMarginTypeSchema.parse({ symbol, marginType: type });
+
+        const result = await setMarginType(params, dexOpts(options));
+
+        formatOutput(
+          result,
+          (r) => {
+            printSuccess(
+              `Margin type set to ${r.marginType} for ${r.symbol} (leverage: ${r.leverage}x)`,
+            );
+          },
+          options,
+        );
+      } catch (error) {
+        printError(error instanceof Error ? error.message : String(error));
+        process.exit(1);
+      }
+    });
+
+  // TP/SL subcommand group
+  const tpsl = trade.command("tp-sl").description("Manage take-profit and stop-loss orders");
+
+  // Place TP/SL
+  tpsl
+    .command("set <symbol>")
+    .description("Set take-profit and/or stop-loss for a position")
+    .option("--json", "Output in JSON format")
+    .option("--network <network>", "Network to use (testnet, netna, local)")
+    .option("--account <alias>", "Use specific account")
+    .option("--tp-trigger <price>", "Take-profit trigger price")
+    .option("--tp-limit <price>", "Take-profit limit price")
+    .option("--tp-size <size>", "Take-profit size (omit for full position)")
+    .option("--sl-trigger <price>", "Stop-loss trigger price")
+    .option("--sl-limit <price>", "Stop-loss limit price")
+    .option("--sl-size <size>", "Stop-loss size (omit for full position)")
+    .action(
+      async (
+        symbol: string,
+        options: TradeCommandOptions & {
+          tpTrigger?: string;
+          tpLimit?: string;
+          tpSize?: string;
+          slTrigger?: string;
+          slLimit?: string;
+          slSize?: string;
+        },
+      ) => {
+        try {
+          const params = PlaceTpSlSchema.parse({
+            symbol,
+            tpTriggerPrice: options.tpTrigger ? parseFloat(options.tpTrigger) : undefined,
+            tpLimitPrice: options.tpLimit ? parseFloat(options.tpLimit) : undefined,
+            tpSize: options.tpSize ? parseFloat(options.tpSize) : undefined,
+            slTriggerPrice: options.slTrigger ? parseFloat(options.slTrigger) : undefined,
+            slLimitPrice: options.slLimit ? parseFloat(options.slLimit) : undefined,
+            slSize: options.slSize ? parseFloat(options.slSize) : undefined,
+          });
+
+          const result = await placeTpSl(params, dexOpts(options));
+
+          formatOutput(
+            result,
+            () => {
+              printSuccess(`TP/SL set for ${symbol}`);
+              console.log(`Transaction: ${result.transactionHash}`);
+            },
+            options,
+          );
+        } catch (error) {
+          printError(error instanceof Error ? error.message : String(error));
+          process.exit(1);
+        }
+      },
+    );
+
+  // Cancel TP/SL
+  tpsl
+    .command("cancel <orderId>")
+    .description("Cancel a TP/SL order")
+    .requiredOption("--market <symbol>", "Market symbol")
+    .option("--json", "Output in JSON format")
+    .option("--network <network>", "Network to use (testnet, netna, local)")
+    .option("--account <alias>", "Use specific account")
+    .action(async (orderId: string, options: TradeCommandOptions & { market: string }) => {
+      try {
+        const params = CancelTpSlSchema.parse({ orderId, symbol: options.market });
+
+        const result = await cancelTpSl(params, dexOpts(options));
+
+        formatOutput(
+          result,
+          () => {
+            printSuccess(`TP/SL order ${orderId} cancelled`);
+            console.log(`Transaction: ${result.transactionHash}`);
+          },
+          options,
+        );
+      } catch (error) {
+        printError(error instanceof Error ? error.message : String(error));
+        process.exit(1);
+      }
+    });
+
+  // List TP/SL
+  tpsl
+    .command("ls <symbol>")
+    .description("List TP/SL orders for a position")
+    .option("--json", "Output in JSON format")
+    .option("--network <network>", "Network to use (testnet, netna, local)")
+    .option("--account <alias>", "Use specific account")
+    .action(async (symbol: string, options: TradeCommandOptions) => {
+      try {
+        const params = GetTpSlSchema.parse({ symbol });
+        const data = await getTpSl(params, dexOpts(options));
+
+        formatOutput(
+          data,
+          (d) => {
+            if (!d.position) {
+              console.log(`No open position for ${d.symbol}`);
+              return;
+            }
+
+            const pos = d.position;
+            const side = pos.size > 0 ? "LONG" : "SHORT";
+            console.log(
+              `${d.symbol} ${side} ${formatNumber(Math.abs(pos.size), 4)} @ ${formatPrice(pos.entryPrice)}\n`,
+            );
+
+            // Position-level TP/SL
+            if (pos.tpTriggerPrice || pos.slTriggerPrice) {
+              console.log("Position TP/SL:");
+              const posTable = createTable(["Type", "Trigger", "Limit", "Order ID"]);
+              if (pos.tpTriggerPrice) {
+                posTable.push([
+                  "Take Profit",
+                  formatPrice(pos.tpTriggerPrice),
+                  pos.tpLimitPrice ? formatPrice(pos.tpLimitPrice) : "-",
+                  pos.tpOrderId ?? "-",
+                ]);
+              }
+              if (pos.slTriggerPrice) {
+                posTable.push([
+                  "Stop Loss",
+                  formatPrice(pos.slTriggerPrice),
+                  pos.slLimitPrice ? formatPrice(pos.slLimitPrice) : "-",
+                  pos.slOrderId ?? "-",
+                ]);
+              }
+              console.log(posTable.toString());
+            }
+
+            // Fixed-size TP/SL orders
+            if (d.orders.length > 0) {
+              console.log("\nFixed-size TP/SL orders:");
+              const orderTable = createTable(["Order ID", "Type", "Side", "Size", "Trigger"]);
+              for (const o of d.orders) {
+                orderTable.push([
+                  formatAddress(o.orderId, 4),
+                  o.orderType ?? "-",
+                  formatSide(o.side),
+                  formatNumber(o.size ?? 0, 4),
+                  o.triggerCondition ?? "-",
+                ]);
+              }
+              console.log(orderTable.toString());
+            }
+
+            if (!pos.tpTriggerPrice && !pos.slTriggerPrice && d.orders.length === 0) {
+              console.log("No TP/SL orders set");
+            }
+          },
+          options,
+        );
+      } catch (error) {
+        printError(error instanceof Error ? error.message : String(error));
+        process.exit(1);
+      }
+    });
 
   // View positions
   trade
@@ -583,17 +779,13 @@ export function createTradeCommand(): Command {
     .option("-w, --watch", "Watch positions in real-time")
     .action(async (options: TradeCommandOptions) => {
       try {
-        const dexOptions: DexOptions = {
-          network: options.network,
-          accountAlias: options.account,
-        };
-
-        const subaccountAddr = resolveSubaccountAddress(dexOptions);
-
-        const readDex = createReadDex(dexOptions);
+        const opts = dexOpts(options);
 
         if (options.watch) {
           console.log("Watching positions... (Ctrl+C to stop)\n");
+
+          const subaccountAddr = resolveSubaccountAddress(opts);
+          const readDex = createReadDex(opts);
 
           const unsubscribe = readDex.userPositions.subscribeByAddr(subaccountAddr, (data) => {
             console.clear();
@@ -610,10 +802,7 @@ export function createTradeCommand(): Command {
           // eslint-disable-next-line @typescript-eslint/no-empty-function
           await new Promise(() => {});
         } else {
-          const positions = await readDex.userPositions.getByAddr({
-            subAddr: subaccountAddr,
-            limit: 100,
-          });
+          const { positions } = await getPositions(opts);
 
           formatOutput(positions, (pos) => renderPositions(pos), options);
         }
@@ -633,17 +822,13 @@ export function createTradeCommand(): Command {
     .option("-w, --watch", "Watch orders in real-time")
     .action(async (options: TradeCommandOptions) => {
       try {
-        const dexOptions: DexOptions = {
-          network: options.network,
-          accountAlias: options.account,
-        };
-
-        const subaccountAddr = resolveSubaccountAddress(dexOptions);
-
-        const readDex = createReadDex(dexOptions);
+        const opts = dexOpts(options);
 
         if (options.watch) {
           console.log("Watching orders... (Ctrl+C to stop)\n");
+
+          const subaccountAddr = resolveSubaccountAddress(opts);
+          const readDex = createReadDex(opts);
 
           const unsubscribe = readDex.userOpenOrders.subscribeByAddr(subaccountAddr, (data) => {
             console.clear();
@@ -660,11 +845,9 @@ export function createTradeCommand(): Command {
           // eslint-disable-next-line @typescript-eslint/no-empty-function
           await new Promise(() => {});
         } else {
-          const ordersResponse = await readDex.userOpenOrders.getByAddr({
-            subAddr: subaccountAddr,
-          });
+          const { orders } = await getOrders(opts);
 
-          formatOutput(ordersResponse.items, (ord) => renderOrders(ord), options);
+          formatOutput(orders.items, (ord) => renderOrders(ord), options);
         }
       } catch (error) {
         printError(error instanceof Error ? error.message : String(error));
@@ -682,21 +865,14 @@ export function createTradeCommand(): Command {
     .option("--limit <limit>", "Number of trades to show", "20")
     .action(async (options: TradeCommandOptions & { limit?: string }) => {
       try {
-        const dexOptions: DexOptions = {
-          network: options.network,
-          accountAlias: options.account,
-        };
-
-        const subaccountAddr = resolveSubaccountAddress(dexOptions);
-
-        const readDex = createReadDex(dexOptions);
-        const trades = await readDex.userTradeHistory.getByAddr({
-          subAddr: subaccountAddr,
-          limit: parseInt(options.limit || "20", 10),
+        const params = GetTradeHistorySchema.parse({
+          limit: options.limit ? parseInt(options.limit, 10) : undefined,
         });
 
+        const { trades } = await getTradeHistory(params, dexOpts(options));
+
         formatOutput(
-          trades.items,
+          trades,
           (tradeList) => {
             if (tradeList.length === 0) {
               console.log("No trade history");
@@ -714,6 +890,225 @@ export function createTradeCommand(): Command {
                 formatPrice(t.price),
                 formatNumber(t.fee_amount, 4),
                 formatPnL(t.realized_pnl_amount),
+              ]);
+            }
+            console.log(table.toString());
+          },
+          options,
+        );
+      } catch (error) {
+        printError(error instanceof Error ? error.message : String(error));
+        process.exit(1);
+      }
+    });
+
+  // Order history
+  trade
+    .command("order-history")
+    .description("View order history (all order states)")
+    .option("--json", "Output in JSON format")
+    .option("--network <network>", "Network to use (testnet, netna, local)")
+    .option("--account <alias>", "Use specific account")
+    .option("--limit <limit>", "Number of orders to show", "20")
+    .action(async (options: TradeCommandOptions & { limit?: string }) => {
+      try {
+        const params = GetOrderHistorySchema.parse({
+          limit: options.limit ? parseInt(options.limit, 10) : undefined,
+        });
+
+        const { orders } = await getOrderHistory(params, dexOpts(options));
+
+        formatOutput(
+          orders,
+          (orderList) => {
+            if (orderList.length === 0) {
+              console.log("No order history");
+              return;
+            }
+
+            const table = createTable([
+              "Time",
+              "Market",
+              "Side",
+              "Type",
+              "Size",
+              "Price",
+              "Status",
+            ]);
+
+            for (const o of orderList) {
+              table.push([
+                new Date(o.unix_ms).toLocaleString(),
+                formatAddress(o.market, 6),
+                formatSide(o.is_buy ? "buy" : "sell"),
+                o.order_type || "limit",
+                formatNumber(o.orig_size ?? 0, 4),
+                formatPrice(o.price ?? 0),
+                o.status,
+              ]);
+            }
+            console.log(table.toString());
+          },
+          options,
+        );
+      } catch (error) {
+        printError(error instanceof Error ? error.message : String(error));
+        process.exit(1);
+      }
+    });
+
+  // Active TWAPs
+  trade
+    .command("active-twaps")
+    .description("View active TWAP orders")
+    .option("--json", "Output in JSON format")
+    .option("--network <network>", "Network to use (testnet, netna, local)")
+    .option("--account <alias>", "Use specific account")
+    .action(async (options: TradeCommandOptions) => {
+      try {
+        const { twaps } = await getActiveTwaps(dexOpts(options));
+
+        formatOutput(
+          twaps,
+          (twapList) => {
+            if (twapList.length === 0) {
+              console.log("No active TWAP orders");
+              return;
+            }
+
+            const table = createTable([
+              "Order ID",
+              "Market",
+              "Side",
+              "Orig Size",
+              "Remaining",
+              "Duration",
+              "Frequency",
+              "Status",
+            ]);
+
+            for (const t of twapList) {
+              table.push([
+                formatAddress(t.order_id, 4),
+                formatAddress(t.market, 6),
+                formatSide(t.is_buy ? "buy" : "sell"),
+                formatNumber(t.orig_size, 4),
+                formatNumber(t.remaining_size, 4),
+                `${t.duration_s}s`,
+                `${t.frequency_s}s`,
+                t.status,
+              ]);
+            }
+            console.log(table.toString());
+          },
+          options,
+        );
+      } catch (error) {
+        printError(error instanceof Error ? error.message : String(error));
+        process.exit(1);
+      }
+    });
+
+  // TWAP history
+  trade
+    .command("twap-history")
+    .description("View TWAP order history")
+    .option("--json", "Output in JSON format")
+    .option("--network <network>", "Network to use (testnet, netna, local)")
+    .option("--account <alias>", "Use specific account")
+    .option("--limit <limit>", "Number of TWAP orders to show", "20")
+    .action(async (options: TradeCommandOptions & { limit?: string }) => {
+      try {
+        const params = GetTwapHistorySchema.parse({
+          limit: options.limit ? parseInt(options.limit, 10) : undefined,
+        });
+
+        const { twaps } = await getTwapHistory(params, dexOpts(options));
+
+        formatOutput(
+          twaps,
+          (twapList) => {
+            if (twapList.length === 0) {
+              console.log("No TWAP history");
+              return;
+            }
+
+            const table = createTable([
+              "Time",
+              "Market",
+              "Side",
+              "Orig Size",
+              "Remaining",
+              "Duration",
+              "Frequency",
+              "Status",
+            ]);
+
+            for (const t of twapList) {
+              table.push([
+                new Date(t.transaction_unix_ms).toLocaleString(),
+                formatAddress(t.market, 6),
+                formatSide(t.is_buy ? "buy" : "sell"),
+                formatNumber(t.orig_size, 4),
+                formatNumber(t.remaining_size, 4),
+                `${t.duration_s}s`,
+                `${t.frequency_s}s`,
+                t.status,
+              ]);
+            }
+            console.log(table.toString());
+          },
+          options,
+        );
+      } catch (error) {
+        printError(error instanceof Error ? error.message : String(error));
+        process.exit(1);
+      }
+    });
+
+  // Funding history
+  trade
+    .command("funding-history")
+    .description("View funding rate payment history")
+    .option("--json", "Output in JSON format")
+    .option("--network <network>", "Network to use (testnet, netna, local)")
+    .option("--account <alias>", "Use specific account")
+    .option("--limit <limit>", "Number of records to show", "20")
+    .action(async (options: TradeCommandOptions & { limit?: string }) => {
+      try {
+        const params = GetFundingHistorySchema.parse({
+          limit: options.limit ? parseInt(options.limit, 10) : undefined,
+        });
+
+        const { funding } = await getFundingHistory(params, dexOpts(options));
+
+        formatOutput(
+          funding,
+          (fundingList) => {
+            if (fundingList.length === 0) {
+              console.log("No funding history");
+              return;
+            }
+
+            const table = createTable([
+              "Time",
+              "Market",
+              "Action",
+              "Size",
+              "Funding",
+              "Fee",
+              "Rebate",
+            ]);
+
+            for (const f of fundingList) {
+              table.push([
+                new Date(f.transaction_unix_ms).toLocaleString(),
+                formatAddress(f.market, 6),
+                f.action,
+                formatNumber(f.size, 4),
+                formatPnL(f.realized_funding_amount),
+                formatNumber(f.fee_amount, 4),
+                f.is_rebate ? "Yes" : "No",
               ]);
             }
             console.log(table.toString());

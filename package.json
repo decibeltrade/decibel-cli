@@ -1,6 +1,7 @@
 {
   "bin": {
-    "decibel-cli": "./dist/index.js"
+    "decibel-cli": "./dist/index.js",
+    "decibel-mcp": "./dist/mcp-server.js"
   },
   "dependencies": {
     "@aptos-labs/gas-station-client": "^2.0.3",
@@ -62,5 +63,5 @@
   },
   "type": "module",
   "types": "dist/index.d.ts",
-  "version": "0.1.0"
+  "version": "0.1.1"
 }

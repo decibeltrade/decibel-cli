@@ -1,7 +1,7 @@
 import { Command } from "commander";
 import inquirer from "inquirer";
 
-import { createReadDex, resolveSubaccountAddress } from "../../services/dex-factory.js";
+import { getBalances } from "../../actions/index.js";
 import {
   addAccount,
   getAllAccounts,
@@ -259,36 +259,21 @@ export function createAccountCommand(): Command {
     .option("--network <network>", "Network to use (testnet, netna, local)")
     .action(async (options: OutputOptions & { account?: string; network?: string }) => {
       try {
-        const subaccountAddr = resolveSubaccountAddress({
+        const data = await getBalances({
           network: options.network as NetworkName,
           accountAlias: options.account,
         });
-        const readDex = createReadDex({ network: options.network as NetworkName });
-
-        // Fetch account overview
-        const overview = await readDex.accountOverview.getByAddr({
-          subAddr: subaccountAddr,
-        });
-
-        const data = {
-          subaccountAddress: subaccountAddr,
-          ...overview,
-        };
 
         formatOutput(
           data,
           (d) => {
             const table = createTable(["Property", "Value"]);
             table.push(["Subaccount Address", formatAddress(d.subaccountAddress)]);
-            // perp_equity_balance = account value (collateral + unrealized PnL)
-            table.push(["Account Value", `$${d.perp_equity_balance.toFixed(2)}`]);
-            table.push(["Unrealized PnL", `$${d.unrealized_pnl.toFixed(2)}`]);
-            // cross_account_position is the net position value
-            table.push(["Position Value", `$${d.cross_account_position.toFixed(2)}`]);
-            table.push([
-              "Withdrawable (Cross)",
-              `$${d.usdc_cross_withdrawable_balance.toFixed(2)}`,
-            ]);
+            table.push(["Account Value", `$${d.perpEquityBalance.toFixed(2)}`]);
+            table.push(["Unrealized PnL", `$${d.unrealizedPnl.toFixed(2)}`]);
+            table.push(["Withdrawable (Cross)", `$${d.crossWithdrawable.toFixed(2)}`]);
+            table.push(["Total Margin", `$${d.totalMargin.toFixed(2)}`]);
+            table.push(["Maintenance Margin", `$${d.maintenanceMargin.toFixed(2)}`]);
             console.log(table.toString());
           },
           options,

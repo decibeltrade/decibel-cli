@@ -4,6 +4,7 @@ import { join } from "path";
 
 // Mock the SDK before importing config
 vi.mock("@decibeltrade/sdk", () => ({
+  MAINNET_CONFIG: { network: "mainnet", endpoint: "https://mainnet.decibel.trade" },
   NETNA_CONFIG: { network: "netna", endpoint: "https://netna.decibel.trade" },
   TESTNET_CONFIG: { network: "testnet", endpoint: "https://testnet.decibel.trade" },
   LOCAL_CONFIG: { network: "local", endpoint: "http://localhost:8080" },

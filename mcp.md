@@ -218,7 +218,7 @@ After saving, restart Claude Desktop to load the MCP server.
 | `DECIBEL_PRIVATE_KEY`         | No\*     | API wallet private key (highest priority)                                            |
 | `DECIBEL_SUBACCOUNT_ADDRESS`  | No\*     | Subaccount address for trading                                                       |
 | `DECIBEL_ACCOUNT_ALIAS`       | No\*     | Account alias from stored accounts                                                   |
-| `DECIBEL_NETWORK`             | No       | Network: `testnet` (default), `netna`, `local`                                       |
+| `DECIBEL_NETWORK`             | No       | Network: `mainnet`, `testnet` (default), `netna`, `local`                            |
 | `DECIBEL_NODE_API_KEY`        | No       | Node API key for higher rate limits (from [geomi.dev](https://geomi.dev))            |
 | `DECIBEL_GAS_STATION_API_KEY` | No       | Gas station API key for sponsored transactions (from [geomi.dev](https://geomi.dev)) |
 
@@ -236,14 +236,34 @@ Once connected, Claude has access to these tools:
 
 ### Trading Tools
 
-| Tool                 | Description                                  |
-| -------------------- | -------------------------------------------- |
-| `place_limit_order`  | Place a limit order (buy/sell/long/short)    |
-| `place_market_order` | Place a market order with slippage tolerance |
-| `cancel_order`       | Cancel an open order by ID                   |
-| `set_leverage`       | Set leverage for a market (1-50x)            |
-| `get_positions`      | Get all open positions                       |
-| `get_orders`         | Get all open orders                          |
+| Tool                      | Description                                  |
+| ------------------------- | -------------------------------------------- |
+| `place_limit_order`       | Place a limit order (buy/sell/long/short)    |
+| `place_market_order`      | Place a market order with slippage tolerance |
+| `place_stop_limit_order`  | Place a stop limit order                     |
+| `place_stop_market_order` | Place a stop market order                    |
+| `place_twap_order`        | Place a TWAP order (time-weighted execution) |
+| `close_position`          | Close an open position                       |
+| `cancel_order`            | Cancel an open order by ID                   |
+| `cancel_all_orders`       | Cancel all open orders                       |
+| `cancel_twap_order`       | Cancel a TWAP order                          |
+| `place_tp_sl`             | Set TP/SL for a position                     |
+| `cancel_tp_sl`            | Cancel a TP/SL order                         |
+| `set_leverage`            | Set leverage for a market (1-50x)            |
+| `set_margin_type`         | Switch cross/isolated margin                 |
+
+### Read Tools
+
+| Tool                  | Description                      |
+| --------------------- | -------------------------------- |
+| `get_positions`       | Get all open positions           |
+| `get_orders`          | Get all open orders              |
+| `get_tp_sl`           | Get TP/SL orders for a position  |
+| `get_active_twaps`    | Get active TWAP orders           |
+| `get_trade_history`   | Get trade fill history           |
+| `get_order_history`   | Get order history (all states)   |
+| `get_twap_history`    | Get TWAP order history           |
+| `get_funding_history` | Get funding rate payment history |
 
 ### Market Data Tools
 
@@ -251,7 +271,7 @@ Once connected, Claude has access to these tools:
 | --------------- | ---------------------------------------------- |
 | `get_markets`   | List all available markets                     |
 | `get_price`     | Get current price, funding rate, open interest |
-| `get_orderbook` | Get order book with bids and asks              |
+| `get_orderbook` | Get order book snapshot                        |
 
 ### Account Tools
 

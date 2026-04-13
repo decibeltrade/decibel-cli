@@ -18,6 +18,7 @@ const { TEST_DIR, TEST_DB_PATH } = vi.hoisted(() => {
 
 // Mock the SDK
 vi.mock("@decibeltrade/sdk", () => ({
+  MAINNET_CONFIG: { network: "mainnet", endpoint: "https://mainnet.decibel.trade" },
   NETNA_CONFIG: { network: "netna", endpoint: "https://netna.decibel.trade" },
   TESTNET_CONFIG: { network: "testnet", endpoint: "https://testnet.decibel.trade" },
   LOCAL_CONFIG: { network: "local", endpoint: "http://localhost:8080" },
@@ -60,7 +61,8 @@ import {
 } from "../../src/services/dex-factory.js";
 
 // Test private key (DO NOT use in production)
-const TEST_PRIVATE_KEY = "0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef";
+const TEST_PRIVATE_KEY =
+  "ed25519-priv-0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef";
 const TEST_SUBACCOUNT_ADDRESS =
   "0xabcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890";
 
@@ -238,7 +240,8 @@ describe("dex-factory", () => {
     });
 
     it("should prioritize privateKey option over stored account", async () => {
-      const differentKey = "0xfedcba0987654321fedcba0987654321fedcba0987654321fedcba0987654321";
+      const differentKey =
+        "ed25519-priv-0xfedcba0987654321fedcba0987654321fedcba0987654321fedcba0987654321";
       const result = await resolveAccount({ privateKey: differentKey });
 
       // Should use the provided key, not the stored one
@@ -248,7 +251,8 @@ describe("dex-factory", () => {
     it("should prioritize account option over default", async () => {
       await addAccount({
         alias: "named-account",
-        privateKey: "0xfedcba0987654321fedcba0987654321fedcba0987654321fedcba0987654321",
+        privateKey:
+          "ed25519-priv-0xfedcba0987654321fedcba0987654321fedcba0987654321fedcba0987654321",
         subaccountAddress: "0x1111111111111111111111111111111111111111111111111111111111111111",
         type: "api-wallet",
       });

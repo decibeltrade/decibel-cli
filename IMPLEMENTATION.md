@@ -6,18 +6,19 @@ This document maps the original implementation plan to the actual files created.
 
 ### Completed Features
 
-| Feature             | Status | Files                                                                   |
-| ------------------- | ------ | ----------------------------------------------------------------------- |
-| CLI Entry Point     | Done   | `src/index.ts`                                                          |
-| Account Management  | Done   | `src/commands/account/index.ts`                                         |
-| Markets Commands    | Done   | `src/commands/markets/index.ts`                                         |
-| Trading Commands    | Done   | `src/commands/trade/index.ts`                                           |
-| MCP Server          | Done   | `src/mcp-server.ts`, `src/mcp/server.ts`                                |
-| SQLite Storage      | Done   | `src/storage/database.ts`, `src/storage/accounts.ts`                    |
-| Utility Modules     | Done   | `src/utils/config.ts`, `src/utils/output.ts`, `src/utils/encryption.ts` |
-| SDK Factory         | Done   | `src/services/dex-factory.ts`                                           |
-| Skill Documentation | Done   | `skills/decibel/SKILL.md`, `reference.md`, `examples.md`                |
-| Unit Tests          | Done   | `tests/` directory                                                      |
+| Feature              | Status | Files                                                                   |
+| -------------------- | ------ | ----------------------------------------------------------------------- |
+| CLI Entry Point      | Done   | `src/index.ts`                                                          |
+| Shared Actions Layer | Done   | `src/actions/` (28 action files with Zod schemas)                       |
+| Account Management   | Done   | `src/commands/account/index.ts`                                         |
+| Markets Commands     | Done   | `src/commands/markets/index.ts`                                         |
+| Trading Commands     | Done   | `src/commands/trade/index.ts`                                           |
+| MCP Server           | Done   | `src/mcp-server.ts`, `src/mcp/server.ts`                                |
+| SQLite Storage       | Done   | `src/storage/database.ts`, `src/storage/accounts.ts`                    |
+| Utility Modules      | Done   | `src/utils/config.ts`, `src/utils/output.ts`, `src/utils/encryption.ts` |
+| SDK Factory          | Done   | `src/services/dex-factory.ts`                                           |
+| Skill Documentation  | Done   | `skills/decibel/SKILL.md`, `reference.md`, `examples.md`                |
+| Unit Tests           | Done   | `tests/` directory                                                      |
 
 ### Not Yet Implemented
 
@@ -46,18 +47,42 @@ decibel-cli/
 |   +-- index.ts                 # CLI entry point (Commander.js)
 |   +-- mcp-server.ts            # MCP server entry point
 |   |
+|   +-- actions/                 # Shared business logic (CLI + MCP)
+|   |   +-- index.ts             # Barrel re-exports
+|   |   +-- utils.ts             # parseSide, roundToTick, findMarket, etc.
+|   |   +-- place-limit-order.ts
+|   |   +-- place-market-order.ts
+|   |   +-- place-stop-limit-order.ts
+|   |   +-- place-stop-market-order.ts
+|   |   +-- place-twap-order.ts
+|   |   +-- close-position.ts
+|   |   +-- cancel-order.ts
+|   |   +-- cancel-all-orders.ts
+|   |   +-- cancel-twap-order.ts
+|   |   +-- place-tp-sl.ts
+|   |   +-- cancel-tp-sl.ts
+|   |   +-- get-tp-sl.ts
+|   |   +-- set-leverage.ts
+|   |   +-- set-margin-type.ts
+|   |   +-- get-positions.ts
+|   |   +-- get-orders.ts
+|   |   +-- get-balances.ts
+|   |   +-- get-markets.ts
+|   |   +-- get-price.ts
+|   |   +-- get-orderbook.ts
+|   |   +-- get-active-twaps.ts
+|   |   +-- get-trade-history.ts
+|   |   +-- get-order-history.ts
+|   |   +-- get-twap-history.ts
+|   |   +-- get-funding-history.ts
+|   |
 |   +-- commands/
 |   |   +-- account/index.ts     # account add/ls/remove/set-default/info
-|   |   +-- trade/index.ts       # order limit/market, cancel, positions, orders, leverage
+|   |   +-- trade/index.ts       # all trading commands (thin CLI wrappers over actions)
 |   |   +-- markets/index.ts     # ls, price, book (with -w watch mode)
 |   |
 |   +-- mcp/
-|   |   +-- server.ts            # MCP server with all tool handlers
-|   |   +-- tools/
-|   |       +-- index.ts         # Re-exports
-|   |       +-- trading-tools.ts # place_order, cancel, set_leverage, positions
-|   |       +-- market-tools.ts  # get_markets, get_price, get_orderbook
-|   |       +-- account-tools.ts # get_balances
+|   |   +-- server.ts            # MCP server (imports directly from actions/)
 |   |
 |   +-- storage/
 |   |   +-- index.ts             # Re-exports
@@ -75,6 +100,8 @@ decibel-cli/
 |       +-- encryption.ts        # Private key encryption/decryption
 |
 +-- tests/
+    +-- actions/utils.test.ts    # Action utility function tests
+    +-- actions/actions.test.ts  # Action integration tests (mocked SDK)
     +-- commands/trade.test.ts   # Trade command unit tests
     +-- services/dex-factory.test.ts # SDK factory tests
     +-- storage/accounts.test.ts # Account storage tests
@@ -150,16 +177,34 @@ The MCP server exposes these tools for AI agent integration:
 
 - `place_limit_order` - Place limit order with price, size, side, TIF
 - `place_market_order` - Market order with slippage tolerance
+- `place_stop_limit_order` - Stop limit order (triggers at stop price, posts as limit)
+- `place_stop_market_order` - Stop market order (triggers at stop price, executes as IOC)
+- `place_twap_order` - TWAP order (time-weighted execution over duration)
+- `close_position` - Close position with reduce-only market order
 - `cancel_order` - Cancel by order ID and market
+- `cancel_all_orders` - Cancel all open orders (optional market filter)
+- `cancel_twap_order` - Cancel an active TWAP order
+- `place_tp_sl` - Set TP/SL for a position (full or partial size)
+- `cancel_tp_sl` - Cancel a TP/SL order
 - `set_leverage` - Set leverage for a market
+- `set_margin_type` - Switch cross/isolated margin
+
+### Read Tools
+
 - `get_positions` - Get all open positions
 - `get_orders` - Get all open orders
+- `get_tp_sl` - Get TP/SL orders for a market position
+- `get_active_twaps` - Get active TWAP orders
+- `get_trade_history` - Get trade fill history
+- `get_order_history` - Get order history (all states)
+- `get_twap_history` - Get TWAP order history
+- `get_funding_history` - Get funding rate payment history
 
 ### Market Tools
 
 - `get_markets` - List all available markets
 - `get_price` - Get price for a specific market
-- `get_orderbook` - Get order book with depth
+- `get_orderbook` - Get order book snapshot (via WebSocket)
 
 ### Account Tools
 
@@ -172,7 +217,7 @@ The MCP server exposes these tools for AI agent integration:
 | `DECIBEL_PRIVATE_KEY`         | API wallet private key for signing transactions                 |
 | `DECIBEL_SUBACCOUNT_ADDRESS`  | Subaccount address for read operations                          |
 | `DECIBEL_ACCOUNT_ALIAS`       | Account alias from stored accounts                              |
-| `DECIBEL_NETWORK`             | Network: testnet, netna, local (default: testnet)               |
+| `DECIBEL_NETWORK`             | Network: mainnet, testnet, netna, local (default: testnet)      |
 | `DECIBEL_NODE_API_KEY`        | Node API key for higher rate limits (from geomi.dev)            |
 | `DECIBEL_GAS_STATION_API_KEY` | Gas station API key for sponsored transactions (from geomi.dev) |
 
