@@ -157,7 +157,7 @@ Replace the env var values with your own. You can omit `DECIBEL_PRIVATE_KEY` and
 
 Alternatively, add to your Claude config file (`~/.claude/settings.json` for Claude Code, or Claude Desktop's config):
 
-````json
+```json
 {
   "mcpServers": {
     "decibel": {
@@ -173,6 +173,7 @@ Alternatively, add to your Claude config file (`~/.claude/settings.json` for Cla
     }
   }
 }
+```
 
 ### Available MCP Tools
 
@@ -233,7 +234,7 @@ node dist/index.js --help
 
 # Run tests
 pnpm test
-````
+```
 
 ## Documentation
 
