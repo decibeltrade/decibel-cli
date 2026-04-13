@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { detectAddressType, resolveAptosAddress } from "./address.js";
+import { detectAddressType, resolveAptosAddress } from "../../src/utils/address.js";
 
 describe("detectAddressType", () => {
   it("detects ETH addresses (0x + 40 hex)", () => {
