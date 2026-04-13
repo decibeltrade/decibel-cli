@@ -59,7 +59,7 @@ claude mcp add --transport stdio \
   --env DECIBEL_SUBACCOUNT_ADDRESS=0x... \
   --env DECIBEL_NETWORK=testnet \
   --env DECIBEL_NODE_API_KEY=aptoslabs_... \
-  -- decibel npx -y -p @decibeltrade/cli decibel-mcp
+  -- decibel npx -y --package @decibeltrade/cli decibel-mcp
 ```
 
 Replace the env var values with your own. You can omit `DECIBEL_PRIVATE_KEY` and `DECIBEL_SUBACCOUNT_ADDRESS` if you've already added a default account with `decibel-cli account add`.
@@ -81,7 +81,7 @@ Claude Code reads MCP configuration from `~/.claude/settings.json`.
   "mcpServers": {
     "decibel": {
       "command": "npx",
-      "args": ["-y", "-p", "@decibeltrade/cli", "decibel-mcp"],
+      "args": ["-y", "--package", "@decibeltrade/cli", "decibel-mcp"],
       "env": {
         "DECIBEL_NETWORK": "testnet",
         "DECIBEL_NODE_API_KEY": "your-node-api-key"
@@ -98,7 +98,7 @@ Claude Code reads MCP configuration from `~/.claude/settings.json`.
   "mcpServers": {
     "decibel": {
       "command": "npx",
-      "args": ["-y", "-p", "@decibeltrade/cli", "decibel-mcp"],
+      "args": ["-y", "--package", "@decibeltrade/cli", "decibel-mcp"],
       "env": {
         "DECIBEL_ACCOUNT_ALIAS": "trading-bot",
         "DECIBEL_NETWORK": "testnet",
@@ -116,7 +116,7 @@ Claude Code reads MCP configuration from `~/.claude/settings.json`.
   "mcpServers": {
     "decibel": {
       "command": "npx",
-      "args": ["-y", "-p", "@decibeltrade/cli", "decibel-mcp"],
+      "args": ["-y", "--package", "@decibeltrade/cli", "decibel-mcp"],
       "env": {
         "DECIBEL_PRIVATE_KEY": "0x...",
         "DECIBEL_SUBACCOUNT_ADDRESS": "0x...",
@@ -146,7 +146,7 @@ After saving, restart Claude Code or run `/mcp` to reload servers.
   "mcpServers": {
     "decibel": {
       "command": "npx",
-      "args": ["-y", "-p", "@decibeltrade/cli", "decibel-mcp"],
+      "args": ["-y", "--package", "@decibeltrade/cli", "decibel-mcp"],
       "env": {
         "DECIBEL_NETWORK": "testnet",
         "DECIBEL_NODE_API_KEY": "your-node-api-key"
@@ -163,7 +163,7 @@ After saving, restart Claude Code or run `/mcp` to reload servers.
   "mcpServers": {
     "decibel": {
       "command": "npx",
-      "args": ["-y", "-p", "@decibeltrade/cli", "decibel-mcp"],
+      "args": ["-y", "--package", "@decibeltrade/cli", "decibel-mcp"],
       "env": {
         "DECIBEL_ACCOUNT_ALIAS": "trading-bot",
         "DECIBEL_NETWORK": "testnet",
@@ -181,7 +181,7 @@ After saving, restart Claude Code or run `/mcp` to reload servers.
   "mcpServers": {
     "decibel": {
       "command": "npx",
-      "args": ["-y", "-p", "@decibeltrade/cli", "decibel-mcp"],
+      "args": ["-y", "--package", "@decibeltrade/cli", "decibel-mcp"],
       "env": {
         "DECIBEL_PRIVATE_KEY": "0x...",
         "DECIBEL_SUBACCOUNT_ADDRESS": "0x...",

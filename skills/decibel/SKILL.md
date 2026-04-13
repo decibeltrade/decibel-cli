@@ -183,7 +183,7 @@ claude mcp add --transport stdio \
   --env DECIBEL_SUBACCOUNT_ADDRESS=0x... \
   --env DECIBEL_NETWORK=testnet \
   --env DECIBEL_NODE_API_KEY=aptoslabs_... \
-  -- decibel npx -y -p @decibeltrade/cli decibel-mcp
+  -- decibel npx -y --package @decibeltrade/cli decibel-mcp
 ```
 
 Replace the env var values with your own. You can omit `DECIBEL_PRIVATE_KEY` and `DECIBEL_SUBACCOUNT_ADDRESS` if you've added a default account with `decibel-cli account add`.
@@ -196,7 +196,7 @@ Alternatively, add to your Claude config file (`~/.claude/settings.json`):
     "decibel": {
       "type": "stdio",
       "command": "npx",
-      "args": ["-y", "-p", "@decibeltrade/cli", "decibel-mcp"],
+      "args": ["-y", "--package", "@decibeltrade/cli", "decibel-mcp"],
       "env": {
         "DECIBEL_NETWORK": "testnet",
         "DECIBEL_PRIVATE_KEY": "ed25519-priv-0x...",
