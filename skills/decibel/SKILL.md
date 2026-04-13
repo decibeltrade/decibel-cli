@@ -183,10 +183,10 @@ claude mcp add --transport stdio \
   --env DECIBEL_SUBACCOUNT_ADDRESS=0x... \
   --env DECIBEL_NETWORK=testnet \
   --env DECIBEL_NODE_API_KEY=aptoslabs_... \
-  -- decibel npx -y tsx /path/to/decibel-cli/src/mcp-server.ts
+  -- decibel npx -y -p @decibeltrade/cli decibel-mcp
 ```
 
-Replace the env var values and `/path/to/decibel-cli` with your own. You can omit `DECIBEL_PRIVATE_KEY` and `DECIBEL_SUBACCOUNT_ADDRESS` if you've added a default account with `decibel-cli account add`.
+Replace the env var values with your own. You can omit `DECIBEL_PRIVATE_KEY` and `DECIBEL_SUBACCOUNT_ADDRESS` if you've added a default account with `decibel-cli account add`.
 
 Alternatively, add to your Claude config file (`~/.claude/settings.json`):
 
@@ -196,11 +196,10 @@ Alternatively, add to your Claude config file (`~/.claude/settings.json`):
     "decibel": {
       "type": "stdio",
       "command": "npx",
-      "args": ["tsx", "/path/to/decibel-cli/src/mcp-server.ts"],
-      "cwd": "/path/to/decibel-cli",
+      "args": ["-y", "-p", "@decibeltrade/cli", "decibel-mcp"],
       "env": {
         "DECIBEL_NETWORK": "testnet",
-        "DECIBEL_PRIVATE_KEY": "0x...",
+        "DECIBEL_PRIVATE_KEY": "ed25519-priv-0x...",
         "DECIBEL_SUBACCOUNT_ADDRESS": "0x...",
         "DECIBEL_NODE_API_KEY": "your-node-api-key"
       }
@@ -208,10 +207,6 @@ Alternatively, add to your Claude config file (`~/.claude/settings.json`):
   }
 }
 ```
-
-Replace `/path/to/decibel-cli` with the actual path to your installation.
-
-> **Note:** We use `tsx` because `@decibeltrade/sdk` has an ESM issue (missing `.js` extensions in compiled output). This will be fixed when the SDK updates to `moduleResolution: "NodeNext"`.
 
 ## Further Reading
 

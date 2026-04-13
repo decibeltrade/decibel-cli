@@ -1,7 +1,7 @@
 {
   "bin": {
-    "decibel-cli": "./dist/index.js",
-    "decibel-mcp": "./dist/mcp-server.js"
+    "decibel-cli": "./bin/decibel-cli.js",
+    "decibel-mcp": "./bin/decibel-mcp.js"
   },
   "dependencies": {
     "@aptos-labs/gas-station-client": "^2.0.3",
@@ -16,6 +16,7 @@
     "ethers": "^6.0.0",
     "inquirer": "^9.2.23",
     "isomorphic-ws": "^5.0.0",
+    "tsx": "^4.21.0",
     "ws": "^8.18.1",
     "zod": "^3.25.62"
   },
@@ -28,7 +29,6 @@
     "@types/node": "^22.0.0",
     "@types/ws": "^8.18.1",
     "eslint": "^9.28.0",
-    "tsx": "^4.21.0",
     "typescript": "^5.9.3",
     "typescript-eslint": "^8.46.2",
     "vitest": "^4.0.18"
@@ -63,5 +63,5 @@
   },
   "type": "module",
   "types": "dist/index.d.ts",
-  "version": "0.1.1"
+  "version": "0.1.2"
 }

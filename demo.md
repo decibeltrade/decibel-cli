@@ -13,10 +13,9 @@ Add this to your Claude Desktop or MCP client configuration:
   "mcpServers": {
     "decibel": {
       "command": "npx",
-      "args": ["tsx", "src/mcp-server.ts"],
-      "cwd": "/path/to/decibel-cli",
+      "args": ["-y", "-p", "@decibeltrade/cli", "decibel-mcp"],
       "env": {
-        "DECIBEL_PRIVATE_KEY": "0x...",
+        "DECIBEL_PRIVATE_KEY": "ed25519-priv-0x...",
         "DECIBEL_SUBACCOUNT_ADDRESS": "0x...",
         "DECIBEL_NETWORK": "testnet",
         "DECIBEL_NODE_API_KEY": "your-node-api-key"

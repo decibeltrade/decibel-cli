@@ -22,10 +22,7 @@ The MCP server supports two authentication methods:
 ### 1. Install Decibel CLI
 
 ```bash
-git clone git@github.com:decibeltrade/decibel-cli.git
-cd decibel-cli
-pnpm install
-pnpm run build
+npm install -g @decibeltrade/cli
 ```
 
 ### 2. Add Your Account (Recommended Method)
@@ -62,17 +59,10 @@ claude mcp add --transport stdio \
   --env DECIBEL_SUBACCOUNT_ADDRESS=0x... \
   --env DECIBEL_NETWORK=testnet \
   --env DECIBEL_NODE_API_KEY=aptoslabs_... \
-  -- decibel npx -y tsx /path/to/decibel-cli/src/mcp-server.ts
+  -- decibel npx -y -p @decibeltrade/cli decibel-mcp
 ```
 
-Replace the values with your own:
-
-- `DECIBEL_PRIVATE_KEY` - Your API wallet private key
-- `DECIBEL_SUBACCOUNT_ADDRESS` - Your subaccount address
-- `DECIBEL_NODE_API_KEY` - Your node API key (from [geomi.dev](https://geomi.dev))
-- `/path/to/decibel-cli` - The actual path to your decibel-cli installation
-
-You can omit `DECIBEL_PRIVATE_KEY` and `DECIBEL_SUBACCOUNT_ADDRESS` if you've already added a default account with `decibel-cli account add`.
+Replace the env var values with your own. You can omit `DECIBEL_PRIVATE_KEY` and `DECIBEL_SUBACCOUNT_ADDRESS` if you've already added a default account with `decibel-cli account add`.
 
 To verify the server was added:
 
@@ -91,8 +81,7 @@ Claude Code reads MCP configuration from `~/.claude/settings.json`.
   "mcpServers": {
     "decibel": {
       "command": "npx",
-      "args": ["tsx", "/path/to/decibel-cli/src/mcp-server.ts"],
-      "cwd": "/path/to/decibel-cli",
+      "args": ["-y", "-p", "@decibeltrade/cli", "decibel-mcp"],
       "env": {
         "DECIBEL_NETWORK": "testnet",
         "DECIBEL_NODE_API_KEY": "your-node-api-key"
@@ -109,8 +98,7 @@ Claude Code reads MCP configuration from `~/.claude/settings.json`.
   "mcpServers": {
     "decibel": {
       "command": "npx",
-      "args": ["tsx", "/path/to/decibel-cli/src/mcp-server.ts"],
-      "cwd": "/path/to/decibel-cli",
+      "args": ["-y", "-p", "@decibeltrade/cli", "decibel-mcp"],
       "env": {
         "DECIBEL_ACCOUNT_ALIAS": "trading-bot",
         "DECIBEL_NETWORK": "testnet",
@@ -128,8 +116,7 @@ Claude Code reads MCP configuration from `~/.claude/settings.json`.
   "mcpServers": {
     "decibel": {
       "command": "npx",
-      "args": ["tsx", "/path/to/decibel-cli/src/mcp-server.ts"],
-      "cwd": "/path/to/decibel-cli",
+      "args": ["-y", "-p", "@decibeltrade/cli", "decibel-mcp"],
       "env": {
         "DECIBEL_PRIVATE_KEY": "0x...",
         "DECIBEL_SUBACCOUNT_ADDRESS": "0x...",
@@ -159,8 +146,7 @@ After saving, restart Claude Code or run `/mcp` to reload servers.
   "mcpServers": {
     "decibel": {
       "command": "npx",
-      "args": ["tsx", "/path/to/decibel-cli/src/mcp-server.ts"],
-      "cwd": "/path/to/decibel-cli",
+      "args": ["-y", "-p", "@decibeltrade/cli", "decibel-mcp"],
       "env": {
         "DECIBEL_NETWORK": "testnet",
         "DECIBEL_NODE_API_KEY": "your-node-api-key"
@@ -177,8 +163,7 @@ After saving, restart Claude Code or run `/mcp` to reload servers.
   "mcpServers": {
     "decibel": {
       "command": "npx",
-      "args": ["tsx", "/path/to/decibel-cli/src/mcp-server.ts"],
-      "cwd": "/path/to/decibel-cli",
+      "args": ["-y", "-p", "@decibeltrade/cli", "decibel-mcp"],
       "env": {
         "DECIBEL_ACCOUNT_ALIAS": "trading-bot",
         "DECIBEL_NETWORK": "testnet",
@@ -196,8 +181,7 @@ After saving, restart Claude Code or run `/mcp` to reload servers.
   "mcpServers": {
     "decibel": {
       "command": "npx",
-      "args": ["tsx", "/path/to/decibel-cli/src/mcp-server.ts"],
-      "cwd": "/path/to/decibel-cli",
+      "args": ["-y", "-p", "@decibeltrade/cli", "decibel-mcp"],
       "env": {
         "DECIBEL_PRIVATE_KEY": "0x...",
         "DECIBEL_SUBACCOUNT_ADDRESS": "0x...",
@@ -307,17 +291,9 @@ Once configured, you can interact with Decibel naturally:
 
 ### Server not connecting
 
-1. Verify the path to `decibel-cli` is correct
+1. Verify `@decibeltrade/cli` is installed (`npm ls -g @decibeltrade/cli`)
 2. Check that authentication is configured (stored account or env vars)
 3. Restart Claude Desktop after config changes
-
-### Permission denied
-
-Make sure the MCP server script is executable:
-
-```bash
-chmod +x /path/to/decibel-cli/src/mcp-server.ts
-```
 
 ### Testing the server manually
 
@@ -325,12 +301,12 @@ You can test the MCP server independently:
 
 ```bash
 # Set environment variables
-export DECIBEL_PRIVATE_KEY=0x...
+export DECIBEL_PRIVATE_KEY=ed25519-priv-0x...
 export DECIBEL_SUBACCOUNT_ADDRESS=0x...
 export DECIBEL_NETWORK=testnet
 
 # Run the server
-npx tsx src/mcp-server.ts
+decibel-mcp
 ```
 
 The server communicates via stdio, so you'll see it waiting for input.
@@ -370,11 +346,10 @@ DECIBEL_NODE_API_KEY=your-node-api-key
   "mcpServers": {
     "decibel": {
       "command": "npx",
-      "args": ["tsx", "/path/to/decibel-cli/src/mcp-server.ts"],
-      "cwd": "/path/to/decibel-cli"
+      "args": ["-y", "-p", "@decibeltrade/cli", "decibel-mcp"]
     }
   }
 }
 ```
 
-The server will load the `.env` file automatically when started from that directory.
+The server will load the `.env` file automatically.
