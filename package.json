@@ -5,7 +5,7 @@
   },
   "dependencies": {
     "@aptos-labs/gas-station-client": "^2.0.3",
-    "@aptos-labs/ts-sdk": "^5.2.1",
+    "@aptos-labs/ts-sdk": "^7.1.0",
     "@decibeltrade/sdk": "0.7.0",
     "@modelcontextprotocol/sdk": "^1.26.0",
     "better-sqlite3": "^11.0.0",
