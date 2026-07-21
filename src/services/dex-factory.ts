@@ -8,6 +8,7 @@ import {
   StoredAccount,
 } from "../storage/accounts.js";
 import {
+  getEnvGasStationAddress,
   getEnvGasStationApiKey,
   getEnvNetwork,
   getEnvNodeApiKey,
@@ -25,6 +26,10 @@ export interface DexOptions {
   privateKey?: string; // Private key for API wallet (for signing transactions)
   nodeApiKey?: string;
   gasStationApiKey?: string;
+  /** Gas station fee-payer address; required to submit encrypted transactions when sponsored. */
+  gasStationAddress?: string;
+  /** When true, front-run-sensitive transactions are submitted encrypted (mempool-private). */
+  encrypt?: boolean;
 }
 
 /**
@@ -34,12 +39,15 @@ export function getConfig(options: DexOptions = {}): DecibelConfig {
   const network = options.network ?? getEnvNetwork();
   const config = getNetworkConfig(network);
 
-  // Override gas station API key if provided
+  // Gas station credentials are consumer-supplied (the SDK ships none). The
+  // fee-payer address is only needed to submit encrypted transactions.
   const gasStationApiKey = options.gasStationApiKey ?? getEnvGasStationApiKey();
+  const gasStationAddress = options.gasStationAddress ?? getEnvGasStationAddress();
   if (gasStationApiKey) {
     return {
       ...config,
       gasStationApiKey,
+      ...(gasStationAddress && { gasStationAddress }),
     };
   }
 
@@ -162,5 +170,6 @@ export async function createWriteDex(options: DexOptions = {}): Promise<DecibelW
 
   return new DecibelWriteDex(config, account, {
     nodeApiKey,
+    defaultEncrypted: options.encrypt ?? false,
   });
 }

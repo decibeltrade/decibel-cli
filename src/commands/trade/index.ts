@@ -61,10 +61,11 @@ interface TradeCommandOptions extends OutputOptions {
   network?: NetworkName;
   account?: string;
   watch?: boolean;
+  encrypt?: boolean;
 }
 
 function dexOpts(options: TradeCommandOptions): DexOptions {
-  return { network: options.network, accountAlias: options.account };
+  return { network: options.network, accountAlias: options.account, encrypt: options.encrypt };
 }
 
 export function createTradeCommand(): Command {
@@ -83,6 +84,7 @@ export function createTradeCommand(): Command {
     .option("--tif <tif>", "Time in force: gtc, post-only, ioc", "gtc")
     .option("--reduce-only", "Reduce-only order")
     .option("--client-id <id>", "Client order ID")
+    .option("--encrypt", "Submit as encrypted (mempool-private) transaction")
     .action(
       async (
         side: string,
@@ -142,6 +144,7 @@ export function createTradeCommand(): Command {
     .option("--reduce-only", "Reduce-only order")
     .option("--slippage <pct>", "Slippage percentage", "1")
     .option("--client-id <id>", "Client order ID")
+    .option("--encrypt", "Submit as encrypted (mempool-private) transaction")
     .action(
       async (
         side: string,
@@ -199,6 +202,7 @@ export function createTradeCommand(): Command {
     .option("--tif <tif>", "Time in force: gtc, post-only, ioc", "gtc")
     .option("--reduce-only", "Reduce-only order")
     .option("--client-id <id>", "Client order ID")
+    .option("--encrypt", "Submit as encrypted (mempool-private) transaction")
     .action(
       async (
         side: string,
@@ -260,6 +264,7 @@ export function createTradeCommand(): Command {
     .option("--reduce-only", "Reduce-only order")
     .option("--slippage <pct>", "Slippage percentage from stop price", "1")
     .option("--client-id <id>", "Client order ID")
+    .option("--encrypt", "Submit as encrypted (mempool-private) transaction")
     .action(
       async (
         side: string,
@@ -320,6 +325,7 @@ export function createTradeCommand(): Command {
     .requiredOption("--frequency <seconds>", "Execution frequency in seconds")
     .option("--reduce-only", "Reduce-only order")
     .option("--client-id <id>", "Client order ID")
+    .option("--encrypt", "Submit as encrypted (mempool-private) transaction")
     .action(
       async (
         side: string,
@@ -370,6 +376,7 @@ export function createTradeCommand(): Command {
     .option("--account <alias>", "Use specific account")
     .option("--slippage <pct>", "Slippage percentage for market close", "1")
     .option("--size <size>", "Partial close size (default: full position)")
+    .option("--encrypt", "Submit as encrypted (mempool-private) transaction")
     .action(
       async (
         symbol: string,
@@ -425,6 +432,7 @@ export function createTradeCommand(): Command {
     .option("--json", "Output in JSON format")
     .option("--network <network>", "Network to use (testnet, netna, local)")
     .option("--account <alias>", "Use specific account")
+    .option("--encrypt", "Submit as encrypted (mempool-private) transaction")
     .action(async (orderId: string, options: TradeCommandOptions & { market: string }) => {
       try {
         const params = CancelOrderSchema.parse({ orderId, symbol: options.market });
@@ -453,6 +461,7 @@ export function createTradeCommand(): Command {
     .option("--json", "Output in JSON format")
     .option("--network <network>", "Network to use (testnet, netna, local)")
     .option("--account <alias>", "Use specific account")
+    .option("--encrypt", "Submit as encrypted (mempool-private) transaction")
     .action(async (orderId: string, options: TradeCommandOptions & { market: string }) => {
       try {
         const params = CancelTwapOrderSchema.parse({ orderId, symbol: options.market });
@@ -482,6 +491,7 @@ export function createTradeCommand(): Command {
     .option("--network <network>", "Network to use (testnet, netna, local)")
     .option("--account <alias>", "Use specific account")
     .option("-y, --yes", "Skip confirmation")
+    .option("--encrypt", "Submit as encrypted (mempool-private) transaction")
     .action(async (options: TradeCommandOptions & { market?: string; yes?: boolean }) => {
       try {
         // Preview how many orders will be cancelled
@@ -541,6 +551,11 @@ export function createTradeCommand(): Command {
         process.exit(1);
       }
     });
+
+  // set-leverage and set-margin deliberately have no --encrypt flag: they route
+  // to configureUserSettingsForMarket, a config change the SDK submits plaintext
+  // (like deposits/withdrawals). Encryption targets front-run-sensitive orders,
+  // so advertising --encrypt here would silently no-op.
 
   // Set leverage
   trade
@@ -624,6 +639,7 @@ export function createTradeCommand(): Command {
     .option("--sl-trigger <price>", "Stop-loss trigger price")
     .option("--sl-limit <price>", "Stop-loss limit price")
     .option("--sl-size <size>", "Stop-loss size (omit for full position)")
+    .option("--encrypt", "Submit as encrypted (mempool-private) transaction")
     .action(
       async (
         symbol: string,
@@ -672,6 +688,7 @@ export function createTradeCommand(): Command {
     .option("--json", "Output in JSON format")
     .option("--network <network>", "Network to use (testnet, netna, local)")
     .option("--account <alias>", "Use specific account")
+    .option("--encrypt", "Submit as encrypted (mempool-private) transaction")
     .action(async (orderId: string, options: TradeCommandOptions & { market: string }) => {
       try {
         const params = CancelTpSlSchema.parse({ orderId, symbol: options.market });

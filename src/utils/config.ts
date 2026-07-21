@@ -52,6 +52,12 @@ export function getEnvGasStationApiKey(): string | undefined {
   return process.env.DECIBEL_GAS_STATION_API_KEY;
 }
 
+// Gas station fee-payer address, required to submit encrypted transactions
+// through a sponsoring gas station (the SDK no longer ships built-in addresses).
+export function getEnvGasStationAddress(): string | undefined {
+  return process.env.DECIBEL_GAS_STATION_ADDRESS;
+}
+
 export function getEnvAccountAlias(): string | undefined {
   return process.env.DECIBEL_ACCOUNT_ALIAS;
 }
