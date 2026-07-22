@@ -86,8 +86,9 @@ decibel-cli account set-default main
 Remove an account from local storage.
 
 **Options:**
-| Option | Description |
-|--------|-------------|
+
+| Option      | Description       |
+| ----------- | ----------------- |
 | `-y, --yes` | Skip confirmation |
 
 ```bash
@@ -100,11 +101,12 @@ decibel-cli account remove main -y
 Show account balances and equity.
 
 **Options:**
-| Option | Description |
-|--------|-------------|
-| `--json` | JSON output |
+
+| Option              | Description      |
+| ------------------- | ---------------- |
+| `--json`            | JSON output      |
 | `--account <alias>` | Specific account |
-| `--network <name>` | Network to use |
+| `--network <name>`  | Network to use   |
 
 **Example:**
 
@@ -122,19 +124,21 @@ decibel-cli account info --json
 Place a limit order.
 
 **Arguments:**
-| Argument | Description |
-|----------|-------------|
-| `side` | `buy`, `sell`, `long`, or `short` |
-| `size` | Order size |
-| `symbol` | Market symbol (e.g., BTC/USD) |
-| `price` | Limit price |
+
+| Argument | Description                       |
+| -------- | --------------------------------- |
+| `side`   | `buy`, `sell`, `long`, or `short` |
+| `size`   | Order size                        |
+| `symbol` | Market symbol (e.g., BTC/USD)     |
+| `price`  | Limit price                       |
 
 **Options:**
-| Option | Description |
-|--------|-------------|
-| `--tif <tif>` | Time-in-force: `gtc` (default), `post-only`, `ioc` |
-| `--reduce-only` | Reduce-only order |
-| `--client-id <id>` | Client order ID |
+
+| Option             | Description                                        |
+| ------------------ | -------------------------------------------------- |
+| `--tif <tif>`      | Time-in-force: `gtc` (default), `post-only`, `ioc` |
+| `--reduce-only`    | Reduce-only order                                  |
+| `--client-id <id>` | Client order ID                                    |
 
 **Examples:**
 
@@ -164,17 +168,19 @@ decibel-cli trade order limit sell 0.01 BTC/USD 55000 --reduce-only
 Place a market order.
 
 **Arguments:**
-| Argument | Description |
-|----------|-------------|
-| `side` | `buy`, `sell`, `long`, or `short` |
-| `size` | Order size |
-| `symbol` | Market symbol |
+
+| Argument | Description                       |
+| -------- | --------------------------------- |
+| `side`   | `buy`, `sell`, `long`, or `short` |
+| `size`   | Order size                        |
+| `symbol` | Market symbol                     |
 
 **Options:**
-| Option | Description |
-|--------|-------------|
+
+| Option             | Description                       |
+| ------------------ | --------------------------------- |
 | `--slippage <pct>` | Slippage percentage (default: 1%) |
-| `--reduce-only` | Reduce-only order |
+| `--reduce-only`    | Reduce-only order                 |
 
 **Examples:**
 
@@ -188,20 +194,22 @@ decibel-cli trade order market sell 0.1 ETH/USD --slippage 0.5
 Place a stop limit order. Triggers at stop price, then posts as a limit order.
 
 **Arguments:**
-| Argument | Description |
-|----------|-------------|
-| `side` | `buy`, `sell`, `long`, or `short` |
-| `size` | Order size |
-| `symbol` | Market symbol |
-| `price` | Limit price (execution price after trigger) |
-| `stopPrice` | Stop trigger price |
+
+| Argument    | Description                                 |
+| ----------- | ------------------------------------------- |
+| `side`      | `buy`, `sell`, `long`, or `short`           |
+| `size`      | Order size                                  |
+| `symbol`    | Market symbol                               |
+| `price`     | Limit price (execution price after trigger) |
+| `stopPrice` | Stop trigger price                          |
 
 **Options:**
-| Option | Description |
-|--------|-------------|
-| `--tif <tif>` | Time-in-force: `gtc` (default), `post-only`, `ioc` |
-| `--reduce-only` | Reduce-only order |
-| `--client-id <id>` | Client order ID |
+
+| Option             | Description                                        |
+| ------------------ | -------------------------------------------------- |
+| `--tif <tif>`      | Time-in-force: `gtc` (default), `post-only`, `ioc` |
+| `--reduce-only`    | Reduce-only order                                  |
+| `--client-id <id>` | Client order ID                                    |
 
 **Examples:**
 
@@ -218,19 +226,21 @@ decibel-cli trade order stop-limit buy 0.01 BTC/USD 70500 70000
 Place a stop market order. Triggers at stop price, then executes immediately with slippage.
 
 **Arguments:**
-| Argument | Description |
-|----------|-------------|
-| `side` | `buy`, `sell`, `long`, or `short` |
-| `size` | Order size |
-| `symbol` | Market symbol |
-| `stopPrice` | Stop trigger price |
+
+| Argument    | Description                       |
+| ----------- | --------------------------------- |
+| `side`      | `buy`, `sell`, `long`, or `short` |
+| `size`      | Order size                        |
+| `symbol`    | Market symbol                     |
+| `stopPrice` | Stop trigger price                |
 
 **Options:**
-| Option | Description |
-|--------|-------------|
+
+| Option             | Description                                       |
+| ------------------ | ------------------------------------------------- |
 | `--slippage <pct>` | Slippage percentage from stop price (default: 1%) |
-| `--reduce-only` | Reduce-only order |
-| `--client-id <id>` | Client order ID |
+| `--reduce-only`    | Reduce-only order                                 |
+| `--client-id <id>` | Client order ID                                   |
 
 **Examples:**
 
@@ -244,23 +254,26 @@ decibel-cli trade order stop-market sell 0.01 BTC/USD 60000 --reduce-only --slip
 Place a TWAP (Time-Weighted Average Price) order. Splits execution over a duration at regular intervals.
 
 **Arguments:**
-| Argument | Description |
-|----------|-------------|
-| `side` | `buy`, `sell`, `long`, or `short` |
-| `size` | Total order size |
-| `symbol` | Market symbol |
+
+| Argument | Description                       |
+| -------- | --------------------------------- |
+| `side`   | `buy`, `sell`, `long`, or `short` |
+| `size`   | Total order size                  |
+| `symbol` | Market symbol                     |
 
 **Required options:**
-| Option | Description |
-|--------|-------------|
-| `--duration <seconds>` | Total duration (120s–86400s) |
+
+| Option                  | Description                   |
+| ----------------------- | ----------------------------- |
+| `--duration <seconds>`  | Total duration (120s–86400s)  |
 | `--frequency <seconds>` | Execution frequency (min 60s) |
 
 **Options:**
-| Option | Description |
-|--------|-------------|
-| `--reduce-only` | Reduce-only order |
-| `--client-id <id>` | Client order ID |
+
+| Option             | Description       |
+| ------------------ | ----------------- |
+| `--reduce-only`    | Reduce-only order |
+| `--client-id <id>` | Client order ID   |
 
 **Examples:**
 
@@ -277,15 +290,17 @@ decibel-cli trade order twap sell 10 ETH/USD --duration 1800 --frequency 300
 Close an open position with a reduce-only market order.
 
 **Arguments:**
-| Argument | Description |
-|----------|-------------|
+
+| Argument | Description   |
+| -------- | ------------- |
 | `symbol` | Market symbol |
 
 **Options:**
-| Option | Description |
-|--------|-------------|
-| `--slippage <pct>` | Slippage percentage (default: 1%) |
-| `--size <size>` | Partial close size (default: full position) |
+
+| Option             | Description                                 |
+| ------------------ | ------------------------------------------- |
+| `--slippage <pct>` | Slippage percentage (default: 1%)           |
+| `--size <size>`    | Partial close size (default: full position) |
 
 **Examples:**
 
@@ -299,8 +314,9 @@ decibel-cli trade close ETH/USD --size 0.5
 Cancel an order by ID.
 
 **Required options:**
-| Option | Description |
-|--------|-------------|
+
+| Option              | Description   |
+| ------------------- | ------------- |
 | `--market <symbol>` | Market symbol |
 
 **Example:**
@@ -314,8 +330,9 @@ decibel-cli trade cancel 12345 --market BTC/USD
 Cancel an active TWAP order.
 
 **Required options:**
-| Option | Description |
-|--------|-------------|
+
+| Option              | Description   |
+| ------------------- | ------------- |
 | `--market <symbol>` | Market symbol |
 
 **Example:**
@@ -329,10 +346,11 @@ decibel-cli trade cancel-twap 67890 --market BTC/USD
 Cancel all open orders.
 
 **Options:**
-| Option | Description |
-|--------|-------------|
+
+| Option              | Description                            |
+| ------------------- | -------------------------------------- |
 | `--market <symbol>` | Only cancel orders for specific market |
-| `-y, --yes` | Skip confirmation |
+| `-y, --yes`         | Skip confirmation                      |
 
 **Examples:**
 
@@ -346,19 +364,21 @@ decibel-cli trade cancel-all --market BTC/USD -y
 Set take-profit and/or stop-loss for a position. Omit size options to apply to the full position.
 
 **Arguments:**
-| Argument | Description |
-|----------|-------------|
+
+| Argument | Description   |
+| -------- | ------------- |
 | `symbol` | Market symbol |
 
 **Options:**
-| Option | Description |
-|--------|-------------|
-| `--tp-trigger <price>` | Take-profit trigger price |
-| `--tp-limit <price>` | Take-profit limit price |
-| `--tp-size <size>` | Take-profit size (omit for full position) |
-| `--sl-trigger <price>` | Stop-loss trigger price |
-| `--sl-limit <price>` | Stop-loss limit price |
-| `--sl-size <size>` | Stop-loss size (omit for full position) |
+
+| Option                 | Description                               |
+| ---------------------- | ----------------------------------------- |
+| `--tp-trigger <price>` | Take-profit trigger price                 |
+| `--tp-limit <price>`   | Take-profit limit price                   |
+| `--tp-size <size>`     | Take-profit size (omit for full position) |
+| `--sl-trigger <price>` | Stop-loss trigger price                   |
+| `--sl-limit <price>`   | Stop-loss limit price                     |
+| `--sl-size <size>`     | Stop-loss size (omit for full position)   |
 
 **Examples:**
 
@@ -385,8 +405,9 @@ decibel-cli trade tp-sl ls BTC/USD
 Cancel a TP/SL order.
 
 **Required options:**
-| Option | Description |
-|--------|-------------|
+
+| Option              | Description   |
+| ------------------- | ------------- |
 | `--market <symbol>` | Market symbol |
 
 **Example:**
@@ -400,16 +421,18 @@ decibel-cli trade tp-sl cancel 12345 --market BTC/USD
 Set leverage for a market.
 
 **Arguments:**
-| Argument | Description |
-|----------|-------------|
-| `symbol` | Market symbol |
+
+| Argument   | Description                               |
+| ---------- | ----------------------------------------- |
+| `symbol`   | Market symbol                             |
 | `leverage` | Leverage value (1-50 depending on market) |
 
 **Options:**
-| Option | Description |
-|--------|-------------|
-| `--cross` | Use cross margin (default) |
-| `--isolated` | Use isolated margin |
+
+| Option       | Description                |
+| ------------ | -------------------------- |
+| `--cross`    | Use cross margin (default) |
+| `--isolated` | Use isolated margin        |
 
 **Examples:**
 
@@ -423,10 +446,11 @@ decibel-cli trade set-leverage ETH/USD 5 --isolated
 Switch margin type for a market. Preserves current leverage setting.
 
 **Arguments:**
-| Argument | Description |
-|----------|-------------|
-| `symbol` | Market symbol |
-| `type` | `cross` or `isolated` |
+
+| Argument | Description           |
+| -------- | --------------------- |
+| `symbol` | Market symbol         |
+| `type`   | `cross` or `isolated` |
 
 **Examples:**
 
@@ -440,10 +464,11 @@ decibel-cli trade set-margin ETH/USD cross
 View open positions.
 
 **Options:**
-| Option | Description |
-|--------|-------------|
+
+| Option        | Description       |
+| ------------- | ----------------- |
 | `-w, --watch` | Real-time updates |
-| `--json` | JSON output |
+| `--json`      | JSON output       |
 
 **Output columns:**
 
@@ -469,10 +494,11 @@ decibel-cli trade positions --json
 View open orders.
 
 **Options:**
-| Option | Description |
-|--------|-------------|
+
+| Option        | Description       |
+| ------------- | ----------------- |
 | `-w, --watch` | Real-time updates |
-| `--json` | JSON output |
+| `--json`      | JSON output       |
 
 **Examples:**
 
@@ -486,20 +512,22 @@ decibel-cli trade orders -w
 View trade history.
 
 **Options:**
-| Option | Description |
-|--------|-------------|
+
+| Option        | Description                            |
+| ------------- | -------------------------------------- |
 | `--limit <n>` | Number of trades to show (default: 20) |
-| `--json` | JSON output |
+| `--json`      | JSON output                            |
 
 ### `decibel-cli trade order-history`
 
 View order history (all order states including filled, cancelled, etc.).
 
 **Options:**
-| Option | Description |
-|--------|-------------|
+
+| Option        | Description                            |
+| ------------- | -------------------------------------- |
 | `--limit <n>` | Number of orders to show (default: 20) |
-| `--json` | JSON output |
+| `--json`      | JSON output                            |
 
 ### `decibel-cli trade active-twaps`
 
@@ -510,20 +538,22 @@ View active TWAP orders.
 View TWAP order history (completed and cancelled).
 
 **Options:**
-| Option | Description |
-|--------|-------------|
+
+| Option        | Description                                 |
+| ------------- | ------------------------------------------- |
 | `--limit <n>` | Number of TWAP orders to show (default: 20) |
-| `--json` | JSON output |
+| `--json`      | JSON output                                 |
 
 ### `decibel-cli trade funding-history`
 
 View funding rate payment history.
 
 **Options:**
-| Option | Description |
-|--------|-------------|
+
+| Option        | Description                             |
+| ------------- | --------------------------------------- |
 | `--limit <n>` | Number of records to show (default: 20) |
-| `--json` | JSON output |
+| `--json`      | JSON output                             |
 
 ---
 
@@ -553,10 +583,11 @@ decibel-cli markets ls --json
 Get current price for a market.
 
 **Options:**
-| Option | Description |
-|--------|-------------|
+
+| Option        | Description             |
+| ------------- | ----------------------- |
 | `-w, --watch` | Real-time price updates |
-| `--json` | JSON output |
+| `--json`      | JSON output             |
 
 **Examples:**
 
@@ -582,11 +613,12 @@ decibel-cli markets price ETH/USD -w
 View order book for a market.
 
 **Options:**
-| Option | Description |
-|--------|-------------|
-| `-w, --watch` | Real-time order book updates |
+
+| Option        | Description                    |
+| ------------- | ------------------------------ |
+| `-w, --watch` | Real-time order book updates   |
 | `--depth <n>` | Number of levels (default: 10) |
-| `--json` | JSON output |
+| `--json`      | JSON output                    |
 
 **Output includes:**
 
