@@ -22,7 +22,7 @@
   },
   "description": "Command-line interface for trading on Decibel",
   "devDependencies": {
-    "@decibeltrade/eslint-config": "1.0.0",
+    "@decibeltrade/lint-config": "2.0.0",
     "@decibeltrade/tsconfig": "1.0.1",
     "@types/better-sqlite3": "^7.6.11",
     "@types/inquirer": "^9.0.7",
