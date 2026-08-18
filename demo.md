@@ -316,12 +316,12 @@ decibel-cli trade cancel-all --yes
 
 ### Global Options
 
-| Option                | Description                                                |
-| --------------------- | ---------------------------------------------------------- |
-| `--network <network>` | Network: mainnet, testnet, netna, local (default: testnet) |
-| `--json`              | Output in JSON format (for scripting/AI agents)            |
-| `-h, --help`          | Show help                                                  |
-| `-V, --version`       | Show version                                               |
+| Option                | Description                                         |
+| --------------------- | --------------------------------------------------- |
+| `--network <network>` | Network: mainnet, testnet, local (default: testnet) |
+| `--json`              | Output in JSON format (for scripting/AI agents)     |
+| `-h, --help`          | Show help                                           |
+| `-V, --version`       | Show version                                        |
 
 ### Account Commands
 

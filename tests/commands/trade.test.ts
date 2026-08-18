@@ -48,7 +48,6 @@ const mockWriteDex = {
 
 vi.mock("@decibeltrade/sdk", () => ({
   TESTNET_CONFIG: {},
-  NETNA_CONFIG: {},
   LOCAL_CONFIG: {},
   TimeInForce: {
     GoodTillCanceled: 0,

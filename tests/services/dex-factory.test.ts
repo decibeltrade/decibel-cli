@@ -19,7 +19,6 @@ const { TEST_DIR, TEST_DB_PATH } = vi.hoisted(() => {
 // Mock the SDK
 vi.mock("@decibeltrade/sdk", () => ({
   MAINNET_CONFIG: { network: "mainnet", endpoint: "https://mainnet.decibel.trade" },
-  NETNA_CONFIG: { network: "netna", endpoint: "https://netna.decibel.trade" },
   TESTNET_CONFIG: { network: "testnet", endpoint: "https://testnet.decibel.trade" },
   LOCAL_CONFIG: { network: "local", endpoint: "http://localhost:8080" },
   DecibelReadDex: vi.fn().mockImplementation(function () {
@@ -90,7 +89,7 @@ describe("dex-factory", () => {
     });
 
     it("should return specified network config", () => {
-      const config = getConfig({ network: "netna" });
+      const config = getConfig({ network: "mainnet" });
       expect(config).toBeDefined();
     });
 
@@ -107,7 +106,7 @@ describe("dex-factory", () => {
     });
 
     it("should accept network option", () => {
-      const dex = createReadDex({ network: "netna" });
+      const dex = createReadDex({ network: "mainnet" });
       expect(dex).toBeDefined();
     });
   });

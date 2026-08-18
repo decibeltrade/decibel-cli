@@ -256,7 +256,7 @@ export function createAccountCommand(): Command {
     .description("Show account balances and equity")
     .option("--json", "Output in JSON format")
     .option("--account <alias>", "Use specific account")
-    .option("--network <network>", "Network to use (testnet, netna, local)")
+    .option("--network <network>", "Network to use (mainnet, testnet, local)")
     .action(async (options: OutputOptions & { account?: string; network?: string }) => {
       try {
         const data = await getBalances({

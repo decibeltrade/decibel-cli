@@ -217,7 +217,7 @@ The MCP server exposes these tools for AI agent integration:
 | `DECIBEL_PRIVATE_KEY`         | API wallet private key for signing transactions                 |
 | `DECIBEL_SUBACCOUNT_ADDRESS`  | Subaccount address for read operations                          |
 | `DECIBEL_ACCOUNT_ALIAS`       | Account alias from stored accounts                              |
-| `DECIBEL_NETWORK`             | Network: mainnet, testnet, netna, local (default: testnet)      |
+| `DECIBEL_NETWORK`             | Network: mainnet, testnet, local (default: testnet)             |
 | `DECIBEL_NODE_API_KEY`        | Node API key for higher rate limits (from geomi.dev)            |
 | `DECIBEL_GAS_STATION_API_KEY` | Gas station API key for sponsored transactions (from geomi.dev) |
 

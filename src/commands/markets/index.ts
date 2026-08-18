@@ -32,7 +32,7 @@ export function createMarketsCommand(): Command {
     .command("ls")
     .description("List all available markets")
     .option("--json", "Output in JSON format")
-    .option("--network <network>", "Network to use (testnet, netna, local)")
+    .option("--network <network>", "Network to use (mainnet, testnet, local)")
     .action(async (options: MarketCommandOptions) => {
       try {
         const result = await getMarkets({ network: options.network });
@@ -65,7 +65,7 @@ export function createMarketsCommand(): Command {
     .command("price <symbol>")
     .description("Get current price for a market")
     .option("--json", "Output in JSON format")
-    .option("--network <network>", "Network to use (testnet, netna, local)")
+    .option("--network <network>", "Network to use (mainnet, testnet, local)")
     .option("-w, --watch", "Watch price in real-time")
     .action(async (symbol: string, options: MarketCommandOptions) => {
       try {
@@ -116,7 +116,7 @@ export function createMarketsCommand(): Command {
     .command("book <symbol>")
     .description("View order book for a market")
     .option("--json", "Output in JSON format")
-    .option("--network <network>", "Network to use (testnet, netna, local)")
+    .option("--network <network>", "Network to use (mainnet, testnet, local)")
     .option("-w, --watch", "Watch orderbook in real-time")
     .option("--depth <depth>", "Number of levels to show", "10")
     .action(async (symbol: string, options: MarketCommandOptions & { depth?: string }) => {

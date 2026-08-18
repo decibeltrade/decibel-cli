@@ -15,7 +15,7 @@
  *   DECIBEL_PRIVATE_KEY - Private key for trading (highest priority)
  *   DECIBEL_ACCOUNT - Account alias from stored accounts
  *   (none) - Falls back to default stored account
- *   DECIBEL_NETWORK - Network (testnet, netna, local)
+ *   DECIBEL_NETWORK - Network (mainnet, testnet, local)
  */
 
 import { config } from "dotenv";

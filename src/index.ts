@@ -34,7 +34,7 @@ program
   .name("decibel-cli")
   .description("Command-line interface for trading on Decibel DEX")
   .version("1.0.0")
-  .option("--network <network>", "Network to use (testnet, netna, local)", "testnet");
+  .option("--network <network>", "Network to use (mainnet, testnet, local)", "testnet");
 
 // Add command groups
 program.addCommand(createAccountCommand());

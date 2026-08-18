@@ -1,10 +1,4 @@
-import {
-  DecibelConfig,
-  LOCAL_CONFIG,
-  MAINNET_CONFIG,
-  NETNA_CONFIG,
-  TESTNET_CONFIG,
-} from "@decibeltrade/sdk";
+import { DecibelConfig, LOCAL_CONFIG, MAINNET_CONFIG, TESTNET_CONFIG } from "@decibeltrade/sdk";
 import { homedir } from "os";
 import { join } from "path";
 
@@ -17,13 +11,12 @@ export const SERVER_PORT_PATH = join(DECIBEL_DIR, "server.port");
 // Default configuration
 export const DEFAULT_NETWORK = "testnet";
 
-export type NetworkName = "mainnet" | "testnet" | "netna" | "local";
+export type NetworkName = "mainnet" | "testnet" | "local";
 
 // Network configurations
 export const NETWORK_CONFIGS: Record<NetworkName, DecibelConfig> = {
   mainnet: MAINNET_CONFIG,
   testnet: TESTNET_CONFIG,
-  netna: NETNA_CONFIG,
   local: LOCAL_CONFIG,
 };
 

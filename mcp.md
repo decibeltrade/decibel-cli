@@ -202,7 +202,7 @@ After saving, restart Claude Desktop to load the MCP server.
 | `DECIBEL_PRIVATE_KEY`         | No\*     | API wallet private key (highest priority)                                            |
 | `DECIBEL_SUBACCOUNT_ADDRESS`  | No\*     | Subaccount address for trading                                                       |
 | `DECIBEL_ACCOUNT_ALIAS`       | No\*     | Account alias from stored accounts                                                   |
-| `DECIBEL_NETWORK`             | No       | Network: `mainnet`, `testnet` (default), `netna`, `local`                            |
+| `DECIBEL_NETWORK`             | No       | Network: `mainnet`, `testnet` (default), `local`                                     |
 | `DECIBEL_NODE_API_KEY`        | No       | Node API key for higher rate limits (from [geomi.dev](https://geomi.dev))            |
 | `DECIBEL_GAS_STATION_API_KEY` | No       | Gas station API key for sponsored transactions (from [geomi.dev](https://geomi.dev)) |
 

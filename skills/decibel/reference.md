@@ -6,13 +6,13 @@ Complete command reference for the Decibel CLI.
 
 These options can be used with any command:
 
-| Option              | Description                             |
-| ------------------- | --------------------------------------- |
-| `--json`            | Output in JSON format for scripting     |
-| `--network <name>`  | Network: mainnet, testnet, netna, local |
-| `--account <alias>` | Use specific account                    |
-| `-V, --version`     | Show version number                     |
-| `-h, --help`        | Show help                               |
+| Option              | Description                         |
+| ------------------- | ----------------------------------- |
+| `--json`            | Output in JSON format for scripting |
+| `--network <name>`  | Network: mainnet, testnet, local    |
+| `--account <alias>` | Use specific account                |
+| `-V, --version`     | Show version number                 |
+| `-h, --help`        | Show help                           |
 
 ---
 
@@ -665,7 +665,7 @@ Common errors and their meanings:
 | `DECIBEL_PRIVATE_KEY`         | API wallet private key for signing transactions                 |
 | `DECIBEL_SUBACCOUNT_ADDRESS`  | Subaccount address for trading                                  |
 | `DECIBEL_ACCOUNT_ALIAS`       | Account alias from stored accounts                              |
-| `DECIBEL_NETWORK`             | Network: mainnet, testnet, netna, local (default: testnet)      |
+| `DECIBEL_NETWORK`             | Network: mainnet, testnet, local (default: testnet)             |
 | `DECIBEL_NODE_API_KEY`        | Node API key for higher rate limits (from geomi.dev)            |
 | `DECIBEL_GAS_STATION_API_KEY` | Gas station API key for sponsored transactions (from geomi.dev) |
 

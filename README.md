@@ -27,7 +27,7 @@ npm install -g decibel-cli
 ```bash
 # Set required environment variables
 export DECIBEL_NODE_API_KEY=aptoslabs_...        # Node API key (from geomi.dev)
-export DECIBEL_NETWORK=testnet                   # Network (mainnet, testnet, netna, local)
+export DECIBEL_NETWORK=testnet                   # Network (mainnet, testnet, local)
 
 # Add your trading account
 decibel-cli account add
@@ -127,12 +127,12 @@ decibel-cli markets book <symbol>    # Order book
 
 ## Global Options
 
-| Option              | Description                              |
-| ------------------- | ---------------------------------------- |
-| `--json`            | Output in JSON format                    |
-| `--network <name>`  | Network (mainnet, testnet, netna, local) |
-| `--account <alias>` | Use specific account                     |
-| `-h, --help`        | Show help                                |
+| Option              | Description                       |
+| ------------------- | --------------------------------- |
+| `--json`            | Output in JSON format             |
+| `--network <name>`  | Network (mainnet, testnet, local) |
+| `--account <alias>` | Use specific account              |
+| `-h, --help`        | Show help                         |
 
 ## MCP Server (AI Agent Integration)
 
@@ -212,7 +212,7 @@ Alternatively, add to your Claude config file (`~/.claude/settings.json` for Cla
 | `DECIBEL_PRIVATE_KEY`         | API wallet private key for signing transactions |
 | `DECIBEL_SUBACCOUNT_ADDRESS`  | Subaccount address for read operations          |
 | `DECIBEL_ACCOUNT_ALIAS`       | Account alias from stored accounts              |
-| `DECIBEL_NETWORK`             | Network (mainnet, testnet, netna, local)        |
+| `DECIBEL_NETWORK`             | Network (mainnet, testnet, local)               |
 | `DECIBEL_NODE_API_KEY`        | Node API key for higher rate limits             |
 | `DECIBEL_GAS_STATION_API_KEY` | Gas station API key for sponsored transactions  |
 

@@ -23,7 +23,7 @@ config:
     - name: DECIBEL_ACCOUNT_ALIAS
       description: Account alias from stored accounts (alternative to env vars)
     - name: DECIBEL_NETWORK
-      description: Network to use (mainnet, testnet, netna, local). Defaults to testnet.
+      description: Network to use (mainnet, testnet, local). Defaults to testnet.
     - name: DECIBEL_NODE_API_KEY
       description: Node API key for higher rate limits (from https://geomi.dev)
     - name: DECIBEL_GAS_STATION_API_KEY
@@ -166,12 +166,12 @@ decibel-cli markets book BTC/USD -w     # Watch order book
 
 ## Global Options
 
-| Option              | Description                                        |
-| ------------------- | -------------------------------------------------- |
-| `--json`            | Output in JSON format (for scripting)              |
-| `--network <name>`  | Use specific network (mainnet/testnet/netna/local) |
-| `--account <alias>` | Use specific account                               |
-| `-h, --help`        | Show help                                          |
+| Option              | Description                                  |
+| ------------------- | -------------------------------------------- |
+| `--json`            | Output in JSON format (for scripting)        |
+| `--network <name>`  | Use specific network (mainnet/testnet/local) |
+| `--account <alias>` | Use specific account                         |
+| `-h, --help`        | Show help                                    |
 
 ## MCP Server Mode
 

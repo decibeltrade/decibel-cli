@@ -5,7 +5,6 @@ import { join } from "path";
 // Mock the SDK before importing config
 vi.mock("@decibeltrade/sdk", () => ({
   MAINNET_CONFIG: { network: "mainnet", endpoint: "https://mainnet.decibel.trade" },
-  NETNA_CONFIG: { network: "netna", endpoint: "https://netna.decibel.trade" },
   TESTNET_CONFIG: { network: "testnet", endpoint: "https://testnet.decibel.trade" },
   LOCAL_CONFIG: { network: "local", endpoint: "http://localhost:8080" },
 }));
@@ -58,9 +57,9 @@ describe("config", () => {
       expect(config).toBe(NETWORK_CONFIGS.testnet);
     });
 
-    it("should return netna config for netna", () => {
-      const config = getNetworkConfig("netna");
-      expect(config).toBe(NETWORK_CONFIGS.netna);
+    it("should return mainnet config for mainnet", () => {
+      const config = getNetworkConfig("mainnet");
+      expect(config).toBe(NETWORK_CONFIGS.mainnet);
     });
 
     it("should return local config for local", () => {
@@ -88,8 +87,8 @@ describe("config", () => {
       });
 
       it("should return env value when valid network", () => {
-        process.env.DECIBEL_NETWORK = "netna";
-        expect(getEnvNetwork()).toBe("netna");
+        process.env.DECIBEL_NETWORK = "mainnet";
+        expect(getEnvNetwork()).toBe("mainnet");
       });
 
       it("should return DEFAULT_NETWORK for invalid network", () => {

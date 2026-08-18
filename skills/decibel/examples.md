@@ -433,7 +433,7 @@ decibel-cli account add
 decibel-cli markets ls
 
 # Try different network
-decibel-cli markets ls --network netna
+decibel-cli markets ls --network local
 ```
 
 ### Order Issues
