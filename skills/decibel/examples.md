@@ -172,6 +172,85 @@ decibel-cli trade close ETH/USD
 
 ---
 
+## Spot Trading Workflow
+
+Spot is a separate product from perps: `spot markets ls` lists what is tradable,
+and a perp symbol will not resolve here. Sizes are base-asset units and prices
+quote-asset units, so on `APT/USDC` a size of `10` is 10 APT.
+
+```bash
+# 1. See what spot markets exist
+decibel-cli spot markets ls
+
+# 2. Check the price and 24h stats
+decibel-cli spot price APT/USDC
+
+# 3. Look at the book before pricing a limit order
+decibel-cli spot book APT/USDC --depth 5
+
+# 4. Buy 10 APT at 5.20 USDC (escrows 52 USDC until filled or cancelled)
+decibel-cli spot order limit buy 10 APT/USDC 5.2
+
+# 5. Check it is resting
+decibel-cli spot orders
+
+# 6. See holdings and what is still reserved by open orders
+decibel-cli spot balances
+
+# 7. Sell out at market with a 0.5% slippage cap
+decibel-cli spot order market sell 10 APT/USDC --slippage 0.5
+```
+
+### Handling a queued (pendingCbs) order
+
+Spot placement is asynchronous when funding needs a rate-limited collateral
+withdrawal. The transaction succeeds, but the order is queued rather than
+resting:
+
+```bash
+decibel-cli spot order limit buy 100 APT/USDC 5.2 --json
+# {
+#   "success": true,
+#   "orderId": "12345",
+#   "pendingCbs": true,        <-- queued, NOT on the book yet
+#   "transactionHash": "0x..."
+# }
+
+# Track the order ID. Do not treat the transaction hash as an acknowledgment.
+decibel-cli spot order-history      # final state of order 12345
+decibel-cli spot history            # fills, if it executed
+
+# Only useful for gtc/post-only: a resting order shows up here once placed.
+decibel-cli spot orders
+```
+
+An IOC order (including everything from `spot order market`) never rests — it
+fills or cancels the instant it is placed. `spot orders` will never show it, so
+an empty list there does not mean the order is still queued. Use order history.
+
+### Cancelling spot orders
+
+```bash
+# One order
+decibel-cli spot cancel 12345 --market APT/USDC
+
+# Everything on one market, no prompt
+decibel-cli spot cancel-all --market APT/USDC --yes
+
+# Every spot order (perp orders are untouched)
+decibel-cli spot cancel-all --yes
+```
+
+### Reviewing spot activity
+
+```bash
+decibel-cli spot history --limit 50          # Fills
+decibel-cli spot order-history --limit 50    # All order states
+decibel-cli spot balances --json             # Holdings + lifetime volume/fees/PnL
+```
+
+---
+
 ## TWAP Order Workflow
 
 ```bash

@@ -1,7 +1,14 @@
 export type { CancelAllOrdersParams, CancelAllOrdersResult } from "./cancel-all-orders.js";
 export { cancelAllOrders, CancelAllOrdersSchema } from "./cancel-all-orders.js";
+export type {
+  CancelAllSpotOrdersParams,
+  CancelAllSpotOrdersResult,
+} from "./cancel-all-spot-orders.js";
+export { cancelAllSpotOrders, CancelAllSpotOrdersSchema } from "./cancel-all-spot-orders.js";
 export type { CancelOrderParams } from "./cancel-order.js";
 export { cancelOrder, CancelOrderSchema } from "./cancel-order.js";
+export type { CancelSpotOrderParams } from "./cancel-spot-order.js";
+export { cancelSpotOrder, CancelSpotOrderSchema } from "./cancel-spot-order.js";
 export type { CancelTpSlParams } from "./cancel-tp-sl.js";
 export { cancelTpSl, CancelTpSlSchema } from "./cancel-tp-sl.js";
 export type { CancelTwapOrderParams } from "./cancel-twap-order.js";
@@ -18,9 +25,20 @@ export { getOrderHistory, GetOrderHistorySchema } from "./get-order-history.js";
 export type { GetOrderbookParams } from "./get-orderbook.js";
 export { getOrderbook, GetOrderbookSchema } from "./get-orderbook.js";
 export { getOrders } from "./get-orders.js";
-export { getPositions } from "./get-positions.js";
+export { fetchMarketNames, getPositions } from "./get-positions.js";
 export type { GetPriceParams } from "./get-price.js";
 export { getPrice, GetPriceSchema } from "./get-price.js";
+export { getSpotBalances } from "./get-spot-balances.js";
+export { getSpotMarkets } from "./get-spot-markets.js";
+export type { GetSpotOrderHistoryParams } from "./get-spot-order-history.js";
+export { getSpotOrderHistory, GetSpotOrderHistorySchema } from "./get-spot-order-history.js";
+export type { GetSpotOrderbookParams } from "./get-spot-orderbook.js";
+export { getSpotOrderbook, GetSpotOrderbookSchema } from "./get-spot-orderbook.js";
+export { getSpotOrders } from "./get-spot-orders.js";
+export type { GetSpotPriceParams } from "./get-spot-price.js";
+export { getSpotPrice, GetSpotPriceSchema } from "./get-spot-price.js";
+export type { GetSpotTradeHistoryParams } from "./get-spot-trade-history.js";
+export { getSpotTradeHistory, GetSpotTradeHistorySchema } from "./get-spot-trade-history.js";
 export type { GetTpSlParams } from "./get-tp-sl.js";
 export { getTpSl, GetTpSlSchema } from "./get-tp-sl.js";
 export type { GetTradeHistoryParams } from "./get-trade-history.js";
@@ -31,6 +49,10 @@ export type { PlaceLimitOrderParams } from "./place-limit-order.js";
 export { placeLimitOrder, PlaceLimitOrderSchema } from "./place-limit-order.js";
 export type { PlaceMarketOrderParams } from "./place-market-order.js";
 export { placeMarketOrder, PlaceMarketOrderSchema } from "./place-market-order.js";
+export type { PlaceSpotLimitOrderParams } from "./place-spot-limit-order.js";
+export { placeSpotLimitOrder, PlaceSpotLimitOrderSchema } from "./place-spot-limit-order.js";
+export type { PlaceSpotMarketOrderParams } from "./place-spot-market-order.js";
+export { placeSpotMarketOrder, PlaceSpotMarketOrderSchema } from "./place-spot-market-order.js";
 export type { PlaceStopLimitOrderParams } from "./place-stop-limit-order.js";
 export { placeStopLimitOrder, PlaceStopLimitOrderSchema } from "./place-stop-limit-order.js";
 export type { PlaceStopMarketOrderParams } from "./place-stop-market-order.js";

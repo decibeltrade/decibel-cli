@@ -14,6 +14,7 @@
  *   decibel-cli --help                      # Show all commands
  *   decibel-cli markets ls --json           # List markets (JSON output)
  *   decibel-cli trade order limit buy 0.01 BTC/USD 50000
+ *   decibel-cli spot order limit buy 10 APT/USDC 5.2
  */
 
 import { Command } from "commander";
@@ -22,6 +23,7 @@ import { config } from "dotenv";
 // Import command modules
 import { createAccountCommand } from "./commands/account/index.js";
 import { createMarketsCommand } from "./commands/markets/index.js";
+import { createSpotCommand } from "./commands/spot/index.js";
 import { createTradeCommand } from "./commands/trade/index.js";
 
 // Load environment variables from .env file
@@ -40,6 +42,7 @@ program
 program.addCommand(createAccountCommand());
 program.addCommand(createMarketsCommand());
 program.addCommand(createTradeCommand());
+program.addCommand(createSpotCommand());
 
 // Global error handler for unhandled promise rejections
 process.on("unhandledRejection", (reason) => {

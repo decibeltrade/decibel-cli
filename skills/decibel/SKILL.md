@@ -1,6 +1,6 @@
 ---
 name: decibel
-description: Trade perpetuals on Decibel DEX (Aptos blockchain). Real-time positions & P&L tracking, orderbook monitoring, multi-account management, and MCP server for AI agent integration.
+description: Trade perpetuals and spot on Decibel DEX (Aptos blockchain). Real-time positions & P&L tracking, orderbook monitoring, multi-account management, and MCP server for AI agent integration.
 emoji: ⚡
 homepage: https://github.com/decibeltrade/decibel-cli
 
@@ -21,7 +21,7 @@ config:
       description: Subaccount address for trading (hex string starting with 0x)
   optionalEnv:
     - name: DECIBEL_ACCOUNT_ALIAS
-      description: Account alias from stored accounts (alternative to env vars)
+      description: Stored-account alias for the bundled MCP server, which has no flags. The CLI ignores it — select a stored account with `--account <alias>`.
     - name: DECIBEL_NETWORK
       description: Network to use (mainnet, testnet, local). Defaults to testnet.
     - name: DECIBEL_NODE_API_KEY
@@ -34,13 +34,14 @@ config:
 
 # Decibel CLI Skill
 
-Trade crypto perpetuals on Decibel DEX from the command line. Built on Aptos blockchain.
+Trade crypto perpetuals and spot on Decibel DEX from the command line. Built on Aptos blockchain.
 
 ## What This Skill Does
 
 This skill enables you to:
 
 - **Trade Perpetuals** - BTC, ETH, and other assets with up to 50x leverage
+- **Trade Spot** - Buy and sell assets outright against USDC, no leverage
 - **Monitor Positions in Real-Time** - WebSocket-powered live updates with color-coded PnL
 - **Manage Multiple Accounts** - Store and switch between trading accounts
 - **View Market Data** - Prices, orderbooks, funding rates
@@ -154,10 +155,54 @@ decibel-cli trade set-leverage BTC/USD 10
 decibel-cli trade set-margin BTC/USD isolated
 ```
 
+### Spot Trading
+
+Spot and perps are separate products: a symbol belongs to one or the other, and
+`trade` commands will not find a spot market (nor `spot` a perp one). Spot
+orders have no leverage, positions, reduce-only, TP/SL or TWAP.
+
+```bash
+# List spot markets first to see available symbols
+decibel-cli spot markets ls
+
+# Place a spot limit order (size in base units, price in quote units)
+decibel-cli spot order limit buy 10 APT/USDC 5.2
+
+# Place a spot market order (IOC limit at the slippage cap)
+decibel-cli spot order market sell 10 APT/USDC --slippage 1
+
+# Cancel
+decibel-cli spot cancel <orderId> --market APT/USDC
+decibel-cli spot cancel-all --market APT/USDC
+
+# View data
+decibel-cli spot orders          # Open spot orders
+decibel-cli spot orders -w       # Watch mode (real-time)
+decibel-cli spot balances        # Holdings + amounts reserved by open orders
+decibel-cli spot history         # Spot fills
+decibel-cli spot order-history   # All spot order states
+
+# Spot market data
+decibel-cli spot price APT/USDC  # Last/mid price and 24h stats
+decibel-cli spot book APT/USDC   # Order book
+```
+
+Two spot behaviors to relay to the user:
+
+- A spot buy reserves `size * price` of the quote asset at the price it is
+  submitted at. For `spot order market` that is the slippage cap, not the mid,
+  so size the order against the cap.
+- When funding needs a rate-limited collateral withdrawal the transaction still
+  succeeds but the order is queued, not resting: the response carries
+  `pendingCbs: true`. Do not report it as placed — track the order ID with
+  `decibel-cli spot order-history` and `decibel-cli spot history`. `spot orders`
+  only shows gtc/post-only orders once they rest; an IOC (market) order fills or
+  cancels on placement and never appears there.
+
 ### Market Data
 
 ```bash
-decibel-cli markets ls           # List all markets
+decibel-cli markets ls           # List all perp markets
 decibel-cli markets price BTC/USD       # Get price
 decibel-cli markets price BTC/USD -w    # Watch price
 decibel-cli markets book BTC/USD        # Order book

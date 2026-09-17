@@ -5,6 +5,7 @@ import {
   createDepthBar,
   createTable,
   formatAddress,
+  formatAmount,
   formatNumber,
   formatOutput,
   formatPercent,
@@ -12,6 +13,8 @@ import {
   formatPrice,
   formatSide,
   formatTimestamp,
+  formatUsd,
+  marketLabel,
 } from "../../src/utils/output.js";
 
 // Disable chalk colors for consistent test output
@@ -54,17 +57,106 @@ describe("output utilities", () => {
     });
   });
 
+  describe("formatAmount", () => {
+    it("trims trailing zeros left by toFixed", () => {
+      expect(formatAmount(0.001, 8)).toBe("0.001");
+      expect(formatAmount(10, 8)).toBe("10");
+      expect(formatAmount(0.1, 8)).toBe("0.1");
+    });
+
+    it("keeps every significant digit at high precision", () => {
+      expect(formatAmount(1e-7, 8)).toBe("0.0000001");
+      expect(formatAmount(0.0001, 6)).toBe("0.0001");
+    });
+
+    it("does not strip zeros from whole numbers", () => {
+      expect(formatAmount(100, 0)).toBe("100");
+      expect(formatAmount(1000, 2)).toBe("1000");
+      expect(formatAmount(10500, 4)).toBe("10500");
+    });
+
+    it("handles zero and negatives", () => {
+      expect(formatAmount(0, 6)).toBe("0");
+      expect(formatAmount(-0.5, 4)).toBe("-0.5");
+    });
+
+    it("rounds at the given precision", () => {
+      expect(formatAmount(0.123456789, 4)).toBe("0.1235");
+    });
+  });
+
+  // Ported from the web app's NumberFormatter.price: five significant digits,
+  // capped by the market's price decimals. A fixed 2 decimals rendered every
+  // sub-cent asset as $0.00.
   describe("formatPrice", () => {
-    it("should format price with $ prefix", () => {
-      expect(formatPrice(1234.56)).toBe("$1234.56");
+    it("drops decimals as the integer part grows", () => {
+      expect(formatPrice(12345.6789)).toBe("$12346");
+      expect(formatPrice(1234.5678)).toBe("$1234.6");
+      expect(formatPrice(12.34567)).toBe("$12.346");
+      expect(formatPrice(1.2345678)).toBe("$1.2346");
     });
 
-    it("should format price with custom decimals", () => {
-      expect(formatPrice(1234.5678, 4)).toBe("$1234.5678");
+    // Below 1 the leading "0" consumes one of the five significant digits, so
+    // four remain after the leading zeros — same as the web app.
+    it("keeps sub-cent prices legible instead of rounding them to zero", () => {
+      expect(formatPrice(0.0043)).toBe("$0.004300");
+      expect(formatPrice(0.0071234)).toBe("$0.007123");
+      expect(formatPrice(0.00001234)).toBe("$0.00001234");
     });
 
-    it("should format zero price", () => {
-      expect(formatPrice(0)).toBe("$0.00");
+    it("caps precision at the market's price decimals", () => {
+      expect(formatPrice(0.000012345678, { pxDecimals: 6 })).toBe("$0.000012");
+      expect(formatPrice(0.000012345678, { pxDecimals: 9 })).toBe("$0.00001235");
+    });
+
+    it("floors a value too small to show at the smallest representable price", () => {
+      expect(formatPrice(0.0000002, { pxDecimals: 3 })).toBe("$0.001");
+      expect(formatPrice(-0.0000002, { pxDecimals: 3 })).toBe("-$0.001");
+    });
+
+    it("formats zero at the market's precision", () => {
+      expect(formatPrice(0)).toBe("$0.0000");
+      expect(formatPrice(0, { pxDecimals: 2 })).toBe("$0.00");
+      expect(formatPrice(0, { pxDecimals: 0 })).toBe("$0");
+    });
+
+    it("can omit the currency symbol", () => {
+      expect(formatPrice(12.34567, { symbol: false })).toBe("12.346");
+    });
+
+    it("keeps negatives signed outside the symbol", () => {
+      expect(formatPrice(-12.34567)).toBe("-$12.346");
+    });
+
+    it("passes non-finite values through", () => {
+      expect(formatPrice(Number.NaN)).toBe("NaN");
+      expect(formatPrice(Number.POSITIVE_INFINITY)).toBe("Infinity");
+    });
+  });
+
+  // Account endpoints identify markets only by address, which is unreadable in
+  // a table; an unlisted market still shows something identifiable.
+  describe("marketLabel", () => {
+    const names = new Map([["0xbtc", "BTC/USD"]]);
+
+    it("resolves a known market to its symbol, case-insensitively", () => {
+      expect(marketLabel("0xbtc", names)).toBe("BTC/USD");
+      expect(marketLabel("0xBTC", names)).toBe("BTC/USD");
+    });
+
+    it("falls back to a truncated address for an unlisted market", () => {
+      expect(marketLabel("0xdeadbeefdeadbeefdeadbeefdeadbeef", names)).toContain("...");
+    });
+
+    it("degrades rather than throwing when no map was built", () => {
+      expect(marketLabel("0xbtc")).toBe("0xbtc");
+    });
+  });
+
+  describe("formatUsd", () => {
+    it("keeps two decimals for account values", () => {
+      expect(formatUsd(1234.56)).toBe("$1234.56");
+      expect(formatUsd(0)).toBe("$0.00");
     });
   });
 

@@ -12,6 +12,7 @@ import {
   CancelTwapOrderSchema,
   closePosition,
   ClosePositionSchema,
+  fetchMarketNames,
   getActiveTwaps,
   getFundingHistory,
   GetFundingHistorySchema,
@@ -52,6 +53,7 @@ import {
   formatPnL,
   formatPrice,
   formatSide,
+  marketLabel,
   OutputOptions,
   printError,
   printSuccess,
@@ -804,10 +806,25 @@ export function createTradeCommand(): Command {
           const subaccountAddr = resolveSubaccountAddress(opts);
           const readDex = createReadDex(opts);
 
+          // Names are stable, so one lookup covers every tick. Mark price is
+          // not on the position stream and is deliberately left unresolved
+          // rather than fetched per tick or shown stale.
+          const nameByAddr = await fetchMarketNames(readDex);
+
           const unsubscribe = readDex.userPositions.subscribeByAddr(subaccountAddr, (data) => {
             console.clear();
             console.log(`Positions - ${new Date().toLocaleTimeString()}\n`);
-            renderPositions(data.positions);
+            renderPositions(
+              data.positions.map((p) => ({
+                ...p,
+                marketName: nameByAddr.get(p.market.toLowerCase()) ?? null,
+                markPrice: null,
+                unrealizedPnl: null,
+              })),
+            );
+            console.log(
+              '\nMark and uPnL are not on the position stream — run "decibel-cli trade positions" for them.',
+            );
           });
 
           process.on("SIGINT", () => {
@@ -846,11 +863,13 @@ export function createTradeCommand(): Command {
 
           const subaccountAddr = resolveSubaccountAddress(opts);
           const readDex = createReadDex(opts);
+          // Names are stable, so one lookup serves every tick.
+          const names = await fetchMarketNames(readDex);
 
           const unsubscribe = readDex.userOpenOrders.subscribeByAddr(subaccountAddr, (data) => {
             console.clear();
             console.log(`Open Orders - ${new Date().toLocaleTimeString()}\n`);
-            renderOrders(data.orders);
+            renderOrders(data.orders, names);
           });
 
           process.on("SIGINT", () => {
@@ -862,9 +881,12 @@ export function createTradeCommand(): Command {
           // eslint-disable-next-line @typescript-eslint/no-empty-function
           await new Promise(() => {});
         } else {
-          const { orders } = await getOrders(opts);
+          const [{ orders }, names] = await Promise.all([
+            getOrders(opts),
+            options.json ? undefined : fetchMarketNames(createReadDex(opts)),
+          ]);
 
-          formatOutput(orders.items, (ord) => renderOrders(ord), options);
+          formatOutput(orders.items, (ord) => renderOrders(ord, names), options);
         }
       } catch (error) {
         printError(error instanceof Error ? error.message : String(error));
@@ -886,7 +908,11 @@ export function createTradeCommand(): Command {
           limit: options.limit ? parseInt(options.limit, 10) : undefined,
         });
 
-        const { trades } = await getTradeHistory(params, dexOpts(options));
+        const opts = dexOpts(options);
+        const [{ trades }, names] = await Promise.all([
+          getTradeHistory(params, opts),
+          options.json ? undefined : fetchMarketNames(createReadDex(opts)),
+        ]);
 
         formatOutput(
           trades,
@@ -901,7 +927,7 @@ export function createTradeCommand(): Command {
             for (const t of tradeList) {
               table.push([
                 new Date(t.transaction_unix_ms).toLocaleString(),
-                formatAddress(t.market, 6),
+                marketLabel(t.market, names),
                 t.action,
                 formatNumber(t.size, 4),
                 formatPrice(t.price),
@@ -933,7 +959,11 @@ export function createTradeCommand(): Command {
           limit: options.limit ? parseInt(options.limit, 10) : undefined,
         });
 
-        const { orders } = await getOrderHistory(params, dexOpts(options));
+        const opts = dexOpts(options);
+        const [{ orders }, names] = await Promise.all([
+          getOrderHistory(params, opts),
+          options.json ? undefined : fetchMarketNames(createReadDex(opts)),
+        ]);
 
         formatOutput(
           orders,
@@ -956,7 +986,7 @@ export function createTradeCommand(): Command {
             for (const o of orderList) {
               table.push([
                 new Date(o.unix_ms).toLocaleString(),
-                formatAddress(o.market, 6),
+                marketLabel(o.market, names),
                 formatSide(o.is_buy ? "buy" : "sell"),
                 o.order_type || "limit",
                 formatNumber(o.orig_size ?? 0, 4),
@@ -983,7 +1013,11 @@ export function createTradeCommand(): Command {
     .option("--account <alias>", "Use specific account")
     .action(async (options: TradeCommandOptions) => {
       try {
-        const { twaps } = await getActiveTwaps(dexOpts(options));
+        const opts = dexOpts(options);
+        const [{ twaps }, names] = await Promise.all([
+          getActiveTwaps(opts),
+          options.json ? undefined : fetchMarketNames(createReadDex(opts)),
+        ]);
 
         formatOutput(
           twaps,
@@ -1007,7 +1041,7 @@ export function createTradeCommand(): Command {
             for (const t of twapList) {
               table.push([
                 formatAddress(t.order_id, 4),
-                formatAddress(t.market, 6),
+                marketLabel(t.market, names),
                 formatSide(t.is_buy ? "buy" : "sell"),
                 formatNumber(t.orig_size, 4),
                 formatNumber(t.remaining_size, 4),
@@ -1040,7 +1074,11 @@ export function createTradeCommand(): Command {
           limit: options.limit ? parseInt(options.limit, 10) : undefined,
         });
 
-        const { twaps } = await getTwapHistory(params, dexOpts(options));
+        const opts = dexOpts(options);
+        const [{ twaps }, names] = await Promise.all([
+          getTwapHistory(params, opts),
+          options.json ? undefined : fetchMarketNames(createReadDex(opts)),
+        ]);
 
         formatOutput(
           twaps,
@@ -1064,7 +1102,7 @@ export function createTradeCommand(): Command {
             for (const t of twapList) {
               table.push([
                 new Date(t.transaction_unix_ms).toLocaleString(),
-                formatAddress(t.market, 6),
+                marketLabel(t.market, names),
                 formatSide(t.is_buy ? "buy" : "sell"),
                 formatNumber(t.orig_size, 4),
                 formatNumber(t.remaining_size, 4),
@@ -1097,7 +1135,11 @@ export function createTradeCommand(): Command {
           limit: options.limit ? parseInt(options.limit, 10) : undefined,
         });
 
-        const { funding } = await getFundingHistory(params, dexOpts(options));
+        const opts = dexOpts(options);
+        const [{ funding }, names] = await Promise.all([
+          getFundingHistory(params, opts),
+          options.json ? undefined : fetchMarketNames(createReadDex(opts)),
+        ]);
 
         formatOutput(
           funding,
@@ -1120,7 +1162,7 @@ export function createTradeCommand(): Command {
             for (const f of fundingList) {
               table.push([
                 new Date(f.transaction_unix_ms).toLocaleString(),
-                formatAddress(f.market, 6),
+                marketLabel(f.market, names),
                 f.action,
                 formatNumber(f.size, 4),
                 formatPnL(f.realized_funding_amount),
@@ -1141,15 +1183,22 @@ export function createTradeCommand(): Command {
   return trade;
 }
 
+/**
+ * Shape of a row from `getPositions` — the raw `/account_positions` fields
+ * plus the ones that action resolves. The field names are the endpoint's, not
+ * invented ones: an earlier version of this interface declared `leverage`,
+ * `liquidation_price`, `mark_price` and `unrealized_pnl`, none of which the
+ * endpoint returns, so four columns silently rendered defaults.
+ */
 interface Position {
-  market?: string;
-  market_name?: string;
+  market: string;
+  marketName: string | null;
   size: number;
   entry_price: number;
-  mark_price?: number;
-  unrealized_pnl?: number;
-  leverage?: number;
-  liquidation_price?: number;
+  user_leverage: number;
+  estimated_liquidation_price: number;
+  markPrice: number | null;
+  unrealizedPnl: number | null;
 }
 
 interface Order {
@@ -1183,20 +1232,22 @@ function renderPositions(positions: Position[]): void {
   for (const p of positions) {
     const isLong = p.size > 0;
     table.push([
-      p.market_name || p.market || "Unknown",
+      // Fall back to a truncated address only when the market list has no
+      // entry for it — an unlisted market is still worth showing.
+      p.marketName ?? formatAddress(p.market, 6),
       formatSide(isLong ? "long" : "short"),
       formatNumber(Math.abs(p.size), 4),
       formatPrice(p.entry_price),
-      formatPrice(p.mark_price ?? 0),
-      formatPnL(p.unrealized_pnl ?? 0),
-      `${p.leverage ?? "-"}x`,
-      p.liquidation_price ? formatPrice(p.liquidation_price) : "-",
+      p.markPrice === null ? "n/a" : formatPrice(p.markPrice),
+      p.unrealizedPnl === null ? "n/a" : formatPnL(p.unrealizedPnl),
+      `${p.user_leverage}x`,
+      p.estimated_liquidation_price ? formatPrice(p.estimated_liquidation_price) : "-",
     ]);
   }
   console.log(table.toString());
 }
 
-function renderOrders(orders: Order[]): void {
+function renderOrders(orders: Order[], names?: Map<string, string>): void {
   if (orders.length === 0) {
     console.log("No open orders");
     return;
@@ -1208,7 +1259,7 @@ function renderOrders(orders: Order[]): void {
     const filledSize = (o.orig_size ?? 0) - (o.remaining_size ?? 0);
     table.push([
       formatAddress(o.order_id, 4),
-      formatAddress(o.market, 6),
+      marketLabel(o.market, names),
       formatSide(o.is_buy ? "buy" : "sell"),
       formatNumber(o.remaining_size ?? 0, 4),
       formatPrice(o.price ?? 0),

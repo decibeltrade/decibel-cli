@@ -10,13 +10,14 @@ import {
 import { createReadDex } from "../../services/dex-factory.js";
 import { NetworkName } from "../../utils/config.js";
 import {
-  createDepthBar,
   createTable,
+  formatAmount,
   formatNumber,
   formatOutput,
   formatPrice,
   OutputOptions,
   printError,
+  renderOrderbook,
 } from "../../utils/output.js";
 
 interface MarketCommandOptions extends OutputOptions {
@@ -40,13 +41,16 @@ export function createMarketsCommand(): Command {
         formatOutput(
           result.markets,
           (marketsList) => {
+            // Human units, matching what the order commands take — the raw
+            // chain values are orders of magnitude larger and are only in the
+            // --json output.
             const table = createTable(["Market", "Max Leverage", "Tick Size", "Min Size", "Mode"]);
             for (const m of marketsList) {
               table.push([
                 m.name,
                 `${m.maxLeverage}x`,
-                formatNumber(m.tickSize, m.priceDecimals),
-                formatNumber(m.minSize, m.sizeDecimals),
+                formatAmount(m.tickSize, m.priceDecimals),
+                formatAmount(m.minSize, m.sizeDecimals),
                 m.mode,
               ]);
             }
@@ -164,40 +168,4 @@ export function createMarketsCommand(): Command {
     });
 
   return markets;
-}
-
-function renderOrderbook(
-  asks: Array<{ price: number; size: number }>,
-  bids: Array<{ price: number; size: number }>,
-): void {
-  const maxAskSize = Math.max(...asks.map((a) => a.size), 0.001);
-  const maxBidSize = Math.max(...bids.map((b) => b.size), 0.001);
-  const maxSize = Math.max(maxAskSize, maxBidSize);
-
-  console.log("  Price          Size         Depth");
-  console.log("  ─────────────────────────────────────────────────────");
-
-  const sortedAsks = [...asks].sort((a, b) => b.price - a.price);
-  for (const ask of sortedAsks) {
-    const depthBar = createDepthBar(ask.size, maxSize, 20, false);
-    console.log(
-      `  \x1b[31m${formatNumber(ask.price, 2).padStart(12)}\x1b[0m  ${formatNumber(ask.size, 4).padStart(10)}  ${depthBar}`,
-    );
-  }
-
-  if (bids.length > 0 && asks.length > 0) {
-    const bestBid = Math.max(...bids.map((b) => b.price));
-    const bestAsk = Math.min(...asks.map((a) => a.price));
-    const spread = bestAsk - bestBid;
-    const spreadPct = (spread / bestAsk) * 100;
-    console.log(`  ─── Spread: ${formatPrice(spread)} (${spreadPct.toFixed(3)}%) ───`);
-  }
-
-  const sortedBids = [...bids].sort((a, b) => b.price - a.price);
-  for (const bid of sortedBids) {
-    const depthBar = createDepthBar(bid.size, maxSize, 20, true);
-    console.log(
-      `  \x1b[32m${formatNumber(bid.price, 2).padStart(12)}\x1b[0m  ${formatNumber(bid.size, 4).padStart(10)}  ${depthBar}`,
-    );
-  }
 }

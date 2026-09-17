@@ -1,19 +1,20 @@
 # Decibel CLI
 
-Command-line interface and MCP server for trading on [Decibel DEX](https://decibel.trade) - a perpetual futures exchange built on Aptos blockchain.
+Command-line interface and MCP server for trading on [Decibel DEX](https://decibel.trade) - a perpetual futures and spot exchange built on Aptos blockchain.
 
-Includes a built-in [MCP server](#mcp-server-ai-agent-integration) with 25 tools, enabling AI agents like Claude to trade, monitor positions, and manage accounts through natural language.
+Includes a built-in [MCP server](#mcp-server-ai-agent-integration) with 36 tools, enabling AI agents like Claude to trade perps and spot, monitor positions, and manage accounts through natural language.
 
 **Target users:** AI agents (primary) and human power users (secondary)
 
 ## Features
 
 - **Full Order Types** - Limit, market, stop-limit, stop-market, and TWAP orders
+- **Spot Trading** - Limit and market orders, holdings, and spot market data
 - **TP/SL Management** - Set, list, and cancel take-profit/stop-loss orders
 - **Account Management** - Multi-account support with encrypted local storage
 - **Market Data** - Real-time prices, orderbook with depth visualization
 - **Watch Mode** - WebSocket-powered real-time updates
-- **MCP Server** - 25 tools for AI agent integration via Model Context Protocol
+- **MCP Server** - 36 tools for AI agent integration via Model Context Protocol
 - **JSON Output** - `--json` flag on all commands for machine-readable output
 
 ## Installation
@@ -43,6 +44,9 @@ decibel-cli trade order limit buy 0.01 BTC/USD 50000
 
 # View positions
 decibel-cli trade positions
+
+# Place a spot order
+decibel-cli spot order limit buy 10 APT/USDC 5.2
 ```
 
 ## Authentication
@@ -117,10 +121,59 @@ decibel-cli trade twap-history
 decibel-cli trade funding-history
 ```
 
+### Spot
+
+Spot and perps are separate products: a symbol belongs to one or the other, and
+`trade` commands will not find a spot market (nor `spot` a perp one). Spot
+orders have no leverage, positions, reduce-only, TP/SL, TWAP or client order id.
+
+```bash
+# Orders
+decibel-cli spot order limit <side> <size> <symbol> <price> [--tif gtc|post-only|ioc]
+decibel-cli spot order market <side> <size> <symbol> [--slippage <pct>]
+
+# Cancel
+decibel-cli spot cancel <orderId> --market <symbol>
+decibel-cli spot cancel-all [--market <symbol>]
+
+# View data
+decibel-cli spot orders [-w]
+decibel-cli spot balances
+decibel-cli spot history
+decibel-cli spot order-history
+
+# Market data
+decibel-cli spot markets ls
+decibel-cli spot price <symbol>
+decibel-cli spot book <symbol>
+```
+
+Sizes are in base-asset units and prices in quote-asset units, and
+`spot markets ls` reports tick/min/lot size in those same units (the `--json`
+output also carries the raw chain-unit values as `rawTickSize`, `rawMinSize`
+and `rawLotSize`). There is no market order on chain for spot: `spot order
+market` sends an IOC limit priced at the slippage cap off the book mid
+(falling back to the last trade), reports the tick-aligned price it was
+actually submitted at, and a buy reserves `size * that price` of the quote
+asset.
+
+`spot cancel-all` sweeps the open-orders feed, which does not include orders
+queued behind a collateral withdrawal — those execute when the withdrawal
+drains. Cancel a queued order by id with `spot cancel <orderId> --market <symbol>`.
+
+Spot placement is asynchronous when funding needs a rate-limited collateral
+withdrawal. The transaction still succeeds, but the response carries
+`pendingCbs: true` and the order is queued rather than resting — it is not
+placed, and the CLI reports it as QUEUED rather than successful. Track the
+returned order ID with `decibel-cli spot order-history` (final state) and
+`decibel-cli spot history` (fills). `spot orders` only helps for gtc/post-only
+orders: an IOC order fills or cancels the moment it is placed and never rests,
+so an empty open-orders list says nothing about it.
+
 ### Markets
 
 ```bash
-decibel-cli markets ls               # List all markets
+decibel-cli markets ls               # List all perp markets
 decibel-cli markets price <symbol>   # Get price
 decibel-cli markets book <symbol>    # Order book
 ```
@@ -204,6 +257,17 @@ Alternatively, add to your Claude config file (`~/.claude/settings.json` for Cla
 | `get_order_history`       | Get order history (all states)   |
 | `get_twap_history`        | Get TWAP order history           |
 | `get_funding_history`     | Get funding rate payment history |
+| `place_spot_limit_order`  | Place a spot limit order         |
+| `place_spot_market_order` | Place a spot market order (IOC)  |
+| `cancel_spot_order`       | Cancel a spot order              |
+| `cancel_all_spot_orders`  | Cancel all open spot orders      |
+| `get_spot_markets`        | List all spot markets            |
+| `get_spot_price`          | Get spot price and 24h stats     |
+| `get_spot_orderbook`      | Get spot order book snapshot     |
+| `get_spot_orders`         | Get open spot orders             |
+| `get_spot_balances`       | Get spot holdings                |
+| `get_spot_trade_history`  | Get spot trade fill history      |
+| `get_spot_order_history`  | Get spot order history           |
 
 ## Environment Variables
 
@@ -211,7 +275,6 @@ Alternatively, add to your Claude config file (`~/.claude/settings.json` for Cla
 | ----------------------------- | ----------------------------------------------- |
 | `DECIBEL_PRIVATE_KEY`         | API wallet private key for signing transactions |
 | `DECIBEL_SUBACCOUNT_ADDRESS`  | Subaccount address for read operations          |
-| `DECIBEL_ACCOUNT_ALIAS`       | Account alias from stored accounts              |
 | `DECIBEL_NETWORK`             | Network (mainnet, testnet, local)               |
 | `DECIBEL_NODE_API_KEY`        | Node API key for higher rate limits             |
 | `DECIBEL_GAS_STATION_API_KEY` | Gas station API key for sponsored transactions  |

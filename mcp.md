@@ -263,6 +263,56 @@ Once connected, Claude has access to these tools:
 | -------------- | -------------------------------------------- |
 | `get_balances` | Get trading account balances and margin info |
 
+### Spot Tools
+
+Spot and perps are separate products: a symbol belongs to one or the other, and
+the perp tools above will not find a spot market (nor the reverse). Spot orders
+have no leverage, positions, reduce-only, TP/SL, TWAP or client order id.
+
+| Tool                      | Description                                         |
+| ------------------------- | --------------------------------------------------- |
+| `place_spot_limit_order`  | Place a spot limit order                            |
+| `place_spot_market_order` | Place a spot market order (IOC at the slippage cap) |
+| `cancel_spot_order`       | Cancel an open spot order by ID                     |
+| `cancel_all_spot_orders`  | Cancel all open spot orders                         |
+| `get_spot_markets`        | List all available spot markets                     |
+| `get_spot_price`          | Get spot last/mid price and 24h stats               |
+| `get_spot_orderbook`      | Get spot order book snapshot                        |
+| `get_spot_orders`         | Get open spot orders                                |
+| `get_spot_balances`       | Get spot holdings and open-order reservations       |
+| `get_spot_trade_history`  | Get spot trade fill history                         |
+| `get_spot_order_history`  | Get spot order history (all states)                 |
+
+Two spot behaviors worth surfacing to users:
+
+- **No on-chain market order.** `place_spot_market_order` sends an IOC limit at
+  the slippage cap off the book mid (falling back to the last trade). It returns
+  both `referencePrice` and the tick-aligned `limitPrice` it was actually
+  submitted at. A buy reserves `size * limitPrice` of the quote asset, so size
+  against that, not the mid.
+- **Placement can be queued.** When funding needs a rate-limited collateral
+  withdrawal the transaction still succeeds, but the response carries
+  `pendingCbs: true` and the order is queued rather than resting — do not report
+  it as placed. Track the returned order ID via `get_spot_order_history` (final
+  state) and `get_spot_trade_history` (fills). `get_spot_orders` only shows
+  gtc/post-only orders once they rest; an IOC order never appears there, so an
+  empty list is not evidence of anything.
+- **Cancellation is verified, not assumed.** `cancel_all_spot_orders` clears
+  accounts larger than one pagination window in repeated passes and never
+  re-submits an order it already cancelled. If it cannot confirm the remaining
+  orders — the open-orders feed lags the chain — it raises an `Incomplete:`
+  error naming how many it did cancel. Re-run it; do not report a partial
+  cancellation as complete.
+- **Cancellation cannot reach queued orders.** An order queued behind a
+  collateral withdrawal (`pendingCbs`) is not on the book, so it is absent from
+  the open-orders feed and no `cancel_all_spot_orders` sweep can find it — it
+  executes once the withdrawal drains. Never report the user as flat after a
+  sweep. `cancel_spot_order` by id does reach a queued order.
+- **Market constraints are normalized.** `get_spot_markets` returns `tickSize`,
+  `minSize` and `lotSize` in the same units the order tools take. The
+  `rawTickSize`/`rawMinSize`/`rawLotSize` fields are on-chain integers — never
+  pass one as an order size.
+
 ## Example Conversations
 
 Once configured, you can interact with Decibel naturally:
@@ -286,6 +336,10 @@ Once configured, you can interact with Decibel naturally:
 **Set leverage:**
 
 > "Set my BTC leverage to 10x"
+
+**Trade spot:**
+
+> "What spot markets are there? Buy 10 APT with USDC at 5.20."
 
 ## Troubleshooting
 

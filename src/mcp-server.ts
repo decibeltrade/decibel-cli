@@ -36,7 +36,7 @@ config();
 // Run the MCP server
 // Account resolution priority:
 // 1. DECIBEL_PRIVATE_KEY env var (if set)
-// 2. DECIBEL_ACCOUNT env var -> stored account by alias
+// 2. DECIBEL_ACCOUNT_ALIAS env var -> stored account by alias
 // 3. Default stored account (from `decibel-cli account add`)
 runMcpServer({
   network: getEnvNetwork(),

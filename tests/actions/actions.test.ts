@@ -16,7 +16,7 @@ const mockMarkets = [
 
 const mockReadDex = {
   markets: { getAll: vi.fn(() => Promise.resolve(mockMarkets)) },
-  marketPrices: { getByName: vi.fn() },
+  marketPrices: { getByName: vi.fn(), getAll: vi.fn(() => Promise.resolve([])) },
   userPositions: { getByAddr: vi.fn() },
   userOpenOrders: { getByAddr: vi.fn() },
   accountOverview: { getByAddr: vi.fn() },
@@ -523,6 +523,61 @@ describe("read actions", () => {
 
       expect(result.positions).toHaveLength(1);
     });
+
+    // The positions endpoint returns a market ADDRESS and no mark price, so the
+    // table showed "0xbtc…" with a $0.00 mark and 0.00 PnL until these were
+    // resolved and derived here.
+    it("resolves the market address to its symbol", async () => {
+      mockReadDex.userPositions.getByAddr.mockResolvedValue([
+        { market: "0xbtc", size: 0.01, entry_price: 90000 },
+      ]);
+      mockReadDex.marketPrices.getAll.mockResolvedValue([{ market: "0xbtc", mark_px: 95000 }]);
+
+      const { positions } = await getPositions();
+
+      expect(positions[0].marketName).toBe("BTC/USD");
+    });
+
+    it("derives mark price and unrealized PnL the way the web app does", async () => {
+      mockReadDex.userPositions.getByAddr.mockResolvedValue([
+        { market: "0xbtc", size: 0.01, entry_price: 90000 },
+        { market: "0xbtc", size: -0.01, entry_price: 90000 },
+      ]);
+      mockReadDex.marketPrices.getAll.mockResolvedValue([{ market: "0xbtc", mark_px: 95000 }]);
+
+      const { positions } = await getPositions();
+
+      // pnl = size * (mark - entry), so a short of the same size mirrors it.
+      expect(positions[0].markPrice).toBe(95000);
+      expect(positions[0].unrealizedPnl).toBeCloseTo(50, 9);
+      expect(positions[1].unrealizedPnl).toBeCloseTo(-50, 9);
+    });
+
+    it("leaves mark price and PnL null when the market has no price", async () => {
+      mockReadDex.userPositions.getByAddr.mockResolvedValue([
+        { market: "0xunknown", size: 1, entry_price: 5 },
+      ]);
+      mockReadDex.marketPrices.getAll.mockResolvedValue([]);
+
+      const { positions } = await getPositions();
+
+      // Null rather than 0: a missing price is not a flat position.
+      expect(positions[0].markPrice).toBeNull();
+      expect(positions[0].unrealizedPnl).toBeNull();
+      expect(positions[0].marketName).toBeNull();
+    });
+
+    it("keeps the raw fields the position endpoint returns", async () => {
+      mockReadDex.userPositions.getByAddr.mockResolvedValue([
+        { market: "0xbtc", size: 0.01, entry_price: 90000, user_leverage: 10 },
+      ]);
+      mockReadDex.marketPrices.getAll.mockResolvedValue([]);
+
+      const { positions } = await getPositions();
+
+      expect(positions[0].market).toBe("0xbtc");
+      expect(positions[0].user_leverage).toBe(10);
+    });
   });
 
   describe("getOrders", () => {
@@ -563,6 +618,34 @@ describe("read actions", () => {
       expect(result.markets).toHaveLength(1);
       expect(result.markets[0].name).toBe("BTC/USD");
       expect(result.markets[0].maxLeverage).toBe(40);
+    });
+
+    // The API serves these in raw chain units. Reporting min_size as 100000
+    // invites a caller to submit it as an order size, which is 8 orders of
+    // magnitude above the real 0.001 BTC minimum.
+    it("should normalize constraints to order units and keep the raw values", async () => {
+      const result = await getMarkets();
+      const market = result.markets[0];
+
+      // tick_size 100000 / 10^6 px decimals; min_size 100000 and lot_size 10
+      // over 10^8 size decimals.
+      expect(market.tickSize).toBe(0.1);
+      expect(market.minSize).toBe(0.001);
+      expect(market.lotSize).toBe(1e-7);
+
+      expect(market.rawTickSize).toBe(100000);
+      expect(market.rawMinSize).toBe(100000);
+      expect(market.rawLotSize).toBe(10);
+    });
+
+    it("should report a minSize an order can actually be checked against", async () => {
+      const { markets } = await getMarkets();
+      const market = markets[0];
+
+      // 0.001 BTC is exactly the minimum; 0.0005 is below it. Against the raw
+      // value both would look absurdly small.
+      expect(0.0005 < market.minSize).toBe(true);
+      expect(0.001 >= market.minSize).toBe(true);
     });
   });
 
