@@ -7,8 +7,20 @@ import {
   DexOptions,
   resolveSubaccountAddress,
 } from "../services/dex-factory.js";
-import { findSpotMarket, getSpotReferencePrice, toSpotChainPrice } from "./spot-utils.js";
+import {
+  assertCredibleSpotBook,
+  executableLimitPrice,
+  findSpotMarket,
+  getSpotReferenceQuote,
+  toSpotChainPrice,
+} from "./spot-utils.js";
 import { parseSide, toChainSize } from "./utils.js";
+
+/**
+ * Headroom over the worst level a fill actually needs, so ordinary book
+ * movement between the snapshot and execution still fills.
+ */
+const DEPTH_CAP_BUFFER_PCT = 0.005;
 
 export const PlaceSpotMarketOrderSchema = z
   .object({
@@ -33,6 +45,20 @@ export type PlaceSpotMarketOrderParams = z.infer<typeof PlaceSpotMarketOrderSche
  *
  * The cap is also the price a bid's escrow is reserved at, so a buy withholds
  * `size * cap` quote — size the order against that, not the reference price.
+ *
+ * Two things bound that cap, because the slippage percentage alone cannot.
+ * Slippage is measured from the reference price, and on spot the reference
+ * price comes from the book, so an attacker who moves the book moves the cap
+ * with it and the percentage constrains nothing. {@link assertCredibleSpotBook}
+ * is what makes the reference worth anchoring to.
+ *
+ * That gate is best-effort and cannot be otherwise from here. It reads a
+ * snapshot, while the IOC it authorizes executes on chain later, so liquidity
+ * that satisfied it can be pulled before the fill — leaving an attacker to
+ * risk the exposure the gate demands only for the length of that window rather
+ * than for the trade. Ordering below keeps the window to local arithmetic, but
+ * closing it needs the invariant enforced at execution time, which the spot
+ * contract does not offer.
  */
 export async function placeSpotMarketOrder(
   params: PlaceSpotMarketOrderParams,
@@ -42,10 +68,41 @@ export async function placeSpotMarketOrder(
   const slippage = params.slippage / 100;
 
   const readDex = createReadDex(dexOptions);
-  const market = await findSpotMarket(readDex, params.symbol);
-  const referencePrice = await getSpotReferencePrice(readDex, market);
 
-  const cap = isBuy ? referencePrice * (1 + slippage) : referencePrice * (1 - slippage);
+  // Resolved before the book is read, not after the gate passes: this decrypts
+  // the signing key behind a deliberately slow KDF, and every millisecond of
+  // that sits between vetting the book and committing to it.
+  const writeDex = await createWriteDex(dexOptions);
+
+  const market = await findSpotMarket(readDex, params.symbol);
+  const { price: referencePrice, snapshot } = await getSpotReferenceQuote(readDex, market);
+
+  // A buy escrows `size * cap`, so that — not the reference price — is what the
+  // book has to be able to defend. A sell's floor sits below the reference
+  // price, and sizing on it there would ask for less than the trade is worth.
+  assertCredibleSpotBook(snapshot, {
+    orderNotional: params.size * (isBuy ? referencePrice * (1 + slippage) : referencePrice),
+    isBuy,
+    marketName: market.market_name,
+  });
+
+  const slippageCap = isBuy ? referencePrice * (1 + slippage) : referencePrice * (1 - slippage);
+
+  // Headroom above what the book requires is headroom an attacker keeps.
+  const executable = executableLimitPrice(snapshot, params.size, isBuy);
+  const depthCap =
+    executable == null
+      ? null
+      : isBuy
+        ? executable * (1 + DEPTH_CAP_BUFFER_PCT)
+        : executable * (1 - DEPTH_CAP_BUFFER_PCT);
+
+  const cap =
+    depthCap == null
+      ? slippageCap
+      : isBuy
+        ? Math.min(slippageCap, depthCap)
+        : Math.max(slippageCap, depthCap);
 
   // Snap to the tick here rather than reporting the pre-rounding cap: the SDK
   // rounds side-safely on the way to chain, so an unrounded cap would be off
@@ -61,7 +118,6 @@ export async function placeSpotMarketOrder(
     );
   }
 
-  const writeDex = await createWriteDex(dexOptions);
   const result = await writeDex.placeSpotOrder({
     marketName: market.market_name,
     price: chainLimitPrice,

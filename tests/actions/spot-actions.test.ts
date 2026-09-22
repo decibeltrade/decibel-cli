@@ -108,6 +108,10 @@ function resetMocks() {
   mockWriteDex.placeSpotOrder.mockReset();
   mockWriteDex.cancelSpotOrder.mockReset();
   mockReadDex.marketDepth.subscribeByAddr.mockClear();
+  // Restores the default too: a `mockResolvedValueOnce` a test queues but never
+  // reaches would otherwise be waiting for whichever test reads contexts next.
+  mockReadDex.spotAssetContexts.getAll.mockReset();
+  mockReadDex.spotAssetContexts.getAll.mockResolvedValue([spotAssetContext]);
   mockReadDex.accountOverview.getByAddr.mockReset();
   mockReadDex.userOpenOrders.getByAddr.mockReset();
   mockReadDex.userTradeHistory.getByAddr.mockReset();
@@ -409,10 +413,27 @@ describe("placeSpotLimitOrder", () => {
   });
 });
 
+/**
+ * A two-sided book with resting size on both legs, which a market order now
+ * requires.
+ *
+ * Tests that assert cap arithmetic pick `bid`/`ask` so the executable-depth
+ * bound stays looser than the slippage bound, leaving slippage the binding
+ * term — the thing those tests are actually about.
+ */
+function twoSidedBook(bid: number, ask: number) {
+  return {
+    best_bid: bid,
+    best_ask: ask,
+    bids: [{ price: bid, size: 1_000_000 }],
+    asks: [{ price: ask, size: 1_000_000 }],
+  };
+}
+
 describe("placeSpotMarketOrder", () => {
   it("prices an IOC buy at the book mid plus slippage", async () => {
     resetMocks();
-    nextDepthSnapshot = { best_bid: 4, best_ask: 5, bids: [], asks: [] };
+    nextDepthSnapshot = twoSidedBook(4.47, 4.53);
     mockWriteDex.placeSpotOrder.mockResolvedValue({
       success: true,
       orderId: "1",
@@ -448,7 +469,7 @@ describe("placeSpotMarketOrder", () => {
     resetMocks();
     // mid 4.5451235 -> cap at 0% slippage is 4545123.5 chain units, which is
     // 45451.235 ticks of 100: not aligned, and rounding up would exceed the cap.
-    nextDepthSnapshot = { best_bid: 4.5451235, best_ask: 4.5451235, bids: [], asks: [] };
+    nextDepthSnapshot = twoSidedBook(4.5251235, 4.5651235);
     mockWriteDex.placeSpotOrder.mockResolvedValue({
       success: true,
       orderId: "1",
@@ -471,7 +492,7 @@ describe("placeSpotMarketOrder", () => {
 
   it("reports the tick-aligned submitted price, rounding a sell floor UP", async () => {
     resetMocks();
-    nextDepthSnapshot = { best_bid: 4.5451235, best_ask: 4.5451235, bids: [], asks: [] };
+    nextDepthSnapshot = twoSidedBook(4.5251235, 4.5651235);
     mockWriteDex.placeSpotOrder.mockResolvedValue({
       success: true,
       orderId: "1",
@@ -499,7 +520,7 @@ describe("placeSpotMarketOrder", () => {
     resetMocks();
     // cap * 10^6 = 4_545_099.6 — nearest-integer scaling gives 4_545_100,
     // which is already tick-aligned and sits ABOVE the cap.
-    nextDepthSnapshot = { best_bid: 4.5450996, best_ask: 4.5450996, bids: [], asks: [] };
+    nextDepthSnapshot = twoSidedBook(4.5250996, 4.5650996);
     mockWriteDex.placeSpotOrder.mockResolvedValue({
       success: true,
       orderId: "1",
@@ -523,7 +544,7 @@ describe("placeSpotMarketOrder", () => {
     resetMocks();
     // floor * 10^6 = 4_545_100.4 — nearest-integer scaling gives 4_545_100,
     // which is tick-aligned and sits BELOW the floor.
-    nextDepthSnapshot = { best_bid: 4.5451004, best_ask: 4.5451004, bids: [], asks: [] };
+    nextDepthSnapshot = twoSidedBook(4.5251004, 4.5651004);
     mockWriteDex.placeSpotOrder.mockResolvedValue({
       success: true,
       orderId: "1",
@@ -545,7 +566,7 @@ describe("placeSpotMarketOrder", () => {
 
   it("rejects a 100% sell slippage instead of submitting a zero price", async () => {
     resetMocks();
-    nextDepthSnapshot = { best_bid: 4, best_ask: 5, bids: [], asks: [] };
+    nextDepthSnapshot = twoSidedBook(4.428, 4.572);
 
     expect(() =>
       PlaceSpotMarketOrderSchema.parse({
@@ -575,7 +596,7 @@ describe("placeSpotMarketOrder", () => {
     // contract rejects. Fail before spending a signature on a certain abort.
     // (Sells ceil, so they land on one tick instead; the schema catches the
     // only sell case that reaches zero, a 100% slippage.)
-    nextDepthSnapshot = { best_bid: 0.00009, best_ask: 0.00009, bids: [], asks: [] };
+    nextDepthSnapshot = twoSidedBook(0.000088, 0.000092);
 
     await expect(
       placeSpotMarketOrder({ side: "buy", size: 1, symbol: "APT/USDC", slippage: 0 }),
@@ -585,7 +606,7 @@ describe("placeSpotMarketOrder", () => {
 
   it("reports a limitPrice that always matches the price sent to the SDK", async () => {
     resetMocks();
-    nextDepthSnapshot = { best_bid: 4.5451235, best_ask: 4.5451235, bids: [], asks: [] };
+    nextDepthSnapshot = twoSidedBook(4.5251235, 4.5651235);
     mockWriteDex.placeSpotOrder.mockResolvedValue({
       success: true,
       orderId: "1",
@@ -606,7 +627,7 @@ describe("placeSpotMarketOrder", () => {
 
   it("prices an IOC sell at the book mid minus slippage", async () => {
     resetMocks();
-    nextDepthSnapshot = { best_bid: 4, best_ask: 5, bids: [], asks: [] };
+    nextDepthSnapshot = twoSidedBook(4.428, 4.572);
     mockWriteDex.placeSpotOrder.mockResolvedValue({
       success: true,
       orderId: "1",
@@ -622,10 +643,11 @@ describe("placeSpotMarketOrder", () => {
     ).toMatchObject({ price: 4_410_000, timeInForce: 2 });
   });
 
-  // A lone quote on a thin book is set by whoever posted it. Deriving the IOC
-  // cap from it lets that party name the price a market order pays, so prefer
-  // the two-sided asset-context mid even though the book feed is fresher.
-  it("ignores a one-sided book and falls through to the asset context", async () => {
+  // A lone quote on a thin book is set by whoever posted it, and the
+  // asset-context mid is no escape: it is the same book computed server-side,
+  // and it arrives without the levels needed to tell a real market from a
+  // posted one. With nothing left to vet, the order is refused.
+  it("refuses a one-sided book rather than falling through to the asset context", async () => {
     resetMocks();
     nextDepthSnapshot = {
       best_bid: null,
@@ -633,22 +655,11 @@ describe("placeSpotMarketOrder", () => {
       bids: [{ price: 40, size: 1 }],
       asks: [],
     };
-    mockWriteDex.placeSpotOrder.mockResolvedValue({
-      success: true,
-      orderId: "1",
-      pendingCbs: false,
-      transactionHash: "0xhash",
-    });
 
-    const result = await placeSpotMarketOrder({
-      side: "buy",
-      size: 1,
-      symbol: "APT/USDC",
-      slippage: 0,
-    });
-
-    // Context mid 4.5, not the lone 40 bid.
-    expect(result.referencePrice).toBe(4.5);
+    await expect(
+      placeSpotMarketOrder({ side: "buy", size: 1, symbol: "APT/USDC", slippage: 0 }),
+    ).rejects.toThrow(/No price source/);
+    expect(mockWriteDex.placeSpotOrder).not.toHaveBeenCalled();
   });
 
   it("refuses to price a market order off a one-sided book with no trade history", async () => {
@@ -659,9 +670,6 @@ describe("placeSpotMarketOrder", () => {
       asks: [{ price: 999, size: 1 }],
       bids: [],
     };
-    mockReadDex.spotAssetContexts.getAll.mockResolvedValueOnce([
-      { ...spotAssetContext, mid: null, last_price: null },
-    ]);
 
     await expect(
       placeSpotMarketOrder({ side: "buy", size: 1, symbol: "APT/USDC", slippage: 1 }),
@@ -669,55 +677,48 @@ describe("placeSpotMarketOrder", () => {
     expect(mockWriteDex.placeSpotOrder).not.toHaveBeenCalled();
   });
 
-  it("falls back to the asset-context mid when the depth feed has no price", async () => {
+  it("refuses the asset-context mid when the depth feed has no price", async () => {
     resetMocks();
     nextDepthSnapshot = { best_bid: null, best_ask: null, bids: [], asks: [] };
-    mockWriteDex.placeSpotOrder.mockResolvedValue({
-      success: true,
-      orderId: "1",
-      pendingCbs: false,
-      transactionHash: "0xhash",
-    });
 
-    const result = await placeSpotMarketOrder({
-      side: "buy",
-      size: 1,
-      symbol: "APT/USDC",
-      slippage: 0,
-    });
-
-    expect(result.referencePrice).toBe(4.5);
+    await expect(
+      placeSpotMarketOrder({ side: "buy", size: 1, symbol: "APT/USDC", slippage: 0 }),
+    ).rejects.toThrow(/No price source/);
+    expect(mockWriteDex.placeSpotOrder).not.toHaveBeenCalled();
   });
 
-  it("falls back to the last trade price when the asset context has no mid", async () => {
+  // The last trade is the cheapest value on the API to forge — one wash trade
+  // between two controlled accounts on an empty book — and nothing in the
+  // payload dates it, so a print from weeks ago reads as current.
+  it("refuses the last trade price when the asset context has no mid", async () => {
     resetMocks();
     nextDepthSnapshot = { best_bid: null, best_ask: null, bids: [], asks: [] };
-    mockReadDex.spotAssetContexts.getAll.mockResolvedValueOnce([
-      { ...spotAssetContext, mid: null },
-    ]);
-    mockWriteDex.placeSpotOrder.mockResolvedValue({
-      success: true,
-      orderId: "1",
-      pendingCbs: false,
-      transactionHash: "0xhash",
-    });
 
-    const result = await placeSpotMarketOrder({
-      side: "buy",
-      size: 1,
-      symbol: "APT/USDC",
-      slippage: 0,
-    });
+    await expect(
+      placeSpotMarketOrder({ side: "buy", size: 1, symbol: "APT/USDC", slippage: 0 }),
+    ).rejects.toThrow(/No price source/);
+    expect(mockWriteDex.placeSpotOrder).not.toHaveBeenCalled();
+  });
 
-    expect(result.referencePrice).toBe(4);
+  it("refuses a book too thin to defend its own midpoint", async () => {
+    resetMocks();
+    // Fair value is ~4.5; the bracketing quotes cost about a dollar to post.
+    nextDepthSnapshot = {
+      best_bid: 100,
+      best_ask: 102,
+      bids: [{ price: 100, size: 0.01 }],
+      asks: [{ price: 102, size: 50 }],
+    };
+
+    await expect(
+      placeSpotMarketOrder({ side: "buy", size: 10, symbol: "APT/USDC", slippage: 1 }),
+    ).rejects.toThrow(/liquidity/i);
+    expect(mockWriteDex.placeSpotOrder).not.toHaveBeenCalled();
   });
 
   it("throws instead of guessing when no price source has a price", async () => {
     resetMocks();
     nextDepthSnapshot = { best_bid: null, best_ask: null, bids: [], asks: [] };
-    mockReadDex.spotAssetContexts.getAll.mockResolvedValueOnce([
-      { ...spotAssetContext, mid: null, last_price: null },
-    ]);
 
     await expect(
       placeSpotMarketOrder({ side: "buy", size: 1, symbol: "APT/USDC", slippage: 1 }),

@@ -242,33 +242,169 @@ export function spotDepthMidPrice(snapshot: SpotDepthSnapshot | null): number | 
 const REFERENCE_PRICE_DEPTH_TIMEOUT_MS = 3_000;
 
 /**
- * Reference price for a spot market, matching the web order form
- * (`useSpotBookMidPrice`): the `market_price` feed is perp-only by design, so
- * the price comes from the depth feed, falling back to the asset-context mid
- * and then the last trade. Both sources are fetched concurrently so a silent depth
- * subscription costs the timeout, not the timeout plus an HTTP round-trip.
- *
- * Throws rather than guessing when no source has a price — the caller would
- * otherwise submit an order priced off nothing.
+ * Widest bid/ask spread that still counts as a price. Past this the midpoint
+ * is the average of two unrelated numbers rather than what the asset trades at.
  */
-export async function getSpotReferencePrice(
+const MAX_REFERENCE_SPREAD_PCT = 0.1;
+
+/**
+ * How far from its own touch a resting level may sit and still count toward
+ * the notional defending the reference price.
+ *
+ * Without the band, size parked far below the bid — where it will never be
+ * hit, and so costs nothing to leave there — would vouch for a quote it does
+ * not actually back.
+ */
+const DEFENDING_BAND_PCT = 0.02;
+
+export interface SpotReferenceQuote {
+  price: number;
+  /** The book the price came from, for callers that go on to vet or walk it. */
+  snapshot: SpotDepthSnapshot | null;
+}
+
+/**
+ * Reference price for a spot market, plus the book it was read from.
+ *
+ * The depth feed is the only source, because it is the only one a caller can
+ * then vet — see {@link assertCredibleSpotBook}, which needs the ladder, not
+ * just a number. The `market_price` feed is perp-only by design, and the two
+ * asset-context fields that look like alternatives are not:
+ *
+ * - `mid` is the same book computed server-side, so it adds no independent
+ *   evidence while arriving without the levels needed to judge it.
+ * - `last_price` is worse. Two controlled accounts set it with a single wash
+ *   trade on an empty book, and the payload carries no trade timestamp to age
+ *   it against — only its own snapshot time — so a print from weeks ago is
+ *   indistinguishable from a current one. The web order form accepts it; a CLI
+ *   or MCP order, which commits in one step with nothing shown first, must not.
+ *
+ * Callers are told to name their own price instead.
+ */
+export async function getSpotReferenceQuote(
   readDex: DecibelReadDex,
   market: SpotMarket,
-): Promise<number> {
-  const [snapshot, context] = await Promise.all([
-    captureSpotDepthSnapshot(readDex, market.market_addr, REFERENCE_PRICE_DEPTH_TIMEOUT_MS).catch(
-      () => null,
-    ),
-    findSpotAssetContext(readDex, market.market_addr).catch(() => undefined),
-  ]);
+): Promise<SpotReferenceQuote> {
+  const snapshot = await captureSpotDepthSnapshot(
+    readDex,
+    market.market_addr,
+    REFERENCE_PRICE_DEPTH_TIMEOUT_MS,
+  ).catch(() => null);
 
-  const price = spotDepthMidPrice(snapshot) ?? context?.mid ?? context?.last_price;
+  const price = spotDepthMidPrice(snapshot);
   if (price == null || price <= 0) {
     throw new Error(
-      `No price source for spot market "${market.market_name}": the orderbook is empty and there is no recent trade. Place a limit order with an explicit price instead.`,
+      `No price source for spot market "${market.market_name}": the orderbook is not two-sided. Place a limit order with an explicit price instead.`,
     );
   }
-  return price;
+  return { price, snapshot };
+}
+
+export interface SpotBookCredibilityArgs {
+  /** Size times reference price, in quote-asset units. */
+  orderNotional: number;
+  isBuy: boolean;
+  marketName: string;
+}
+
+/**
+ * Refuse a book too thin or too wide to price a market order against.
+ *
+ * Spot has no oracle, so the book is the only reference there is and a market
+ * order's cap is whatever the book says. That makes the mid worth
+ * manipulating: minimum-sized quotes bracketing an arbitrary price cost almost
+ * nothing to post and move the cap anywhere.
+ *
+ * What an attacker cannot fake cheaply is the exposure needed to hold the quote
+ * up. Lifting the mid for a victim's buy means resting a bid far above fair
+ * value, and that bid is hittable by anyone who notices. So the question asked
+ * here is not "is this mid plausible" — unanswerable without a second source —
+ * but "is enough real size at risk behind it to make the lie cost more than the
+ * trade it would steal", i.e. at least the notional being priced off it.
+ *
+ * Note which side is checked: a buy is gated on the bids, because the bid is
+ * the leg an attacker must overpay on to raise the mid. The asks the buy
+ * actually consumes prove nothing — that is where the attacker's inventory sits.
+ */
+export function assertCredibleSpotBook(
+  snapshot: SpotDepthSnapshot | null,
+  { orderNotional, isBuy, marketName }: SpotBookCredibilityArgs,
+): void {
+  const bestBid = snapshot?.bestBid;
+  const bestAsk = snapshot?.bestAsk;
+  if (!snapshot || bestBid == null || bestAsk == null || bestBid <= 0) {
+    throw new Error(
+      `Spot market "${marketName}" has no two-sided orderbook to price a market order against. Place a limit order with an explicit price instead.`,
+    );
+  }
+
+  // Those orders should have matched, so a book quoting them describes a
+  // market that does not exist and its midpoint means nothing. trading-api
+  // meters this state on the same feed, so it does occur.
+  if (bestBid >= bestAsk) {
+    throw new Error(
+      `Spot market "${marketName}" reports a crossed or locked book (bid ${bestBid} >= ask ${bestAsk}), which has no meaningful midpoint. Place a limit order with an explicit price instead.`,
+    );
+  }
+
+  const mid = (bestBid + bestAsk) / 2;
+  const spread = (bestAsk - bestBid) / mid;
+  if (spread > MAX_REFERENCE_SPREAD_PCT) {
+    throw new Error(
+      `Spot market "${marketName}" has a ${(spread * 100).toFixed(1)}% bid/ask spread (${bestBid} / ${bestAsk}), too wide for its midpoint to be a meaningful price. Place a limit order with an explicit price instead.`,
+    );
+  }
+
+  const touch = isBuy ? bestBid : bestAsk;
+  const defending = isBuy ? snapshot.bids : snapshot.asks;
+  const inBand = (price: number) =>
+    isBuy ? price >= touch * (1 - DEFENDING_BAND_PCT) : price <= touch * (1 + DEFENDING_BAND_PCT);
+
+  const defendingNotional = defending
+    .filter((level) => inBand(level.price))
+    .reduce((sum, level) => sum + level.price * level.size, 0);
+
+  if (defendingNotional < orderNotional) {
+    throw new Error(
+      `Spot market "${marketName}" has only ${defendingNotional.toFixed(2)} of resting ${isBuy ? "bid" : "ask"} liquidity defending its ${mid} midpoint, against an order notional of ${orderNotional.toFixed(2)}. That is too little to trust the midpoint as a price cap. Place a limit order with an explicit price instead.`,
+    );
+  }
+}
+
+/**
+ * Worst price the requested size must reach to fill against resting liquidity,
+ * or null when the visible ladder cannot bound it.
+ *
+ * Levels arrive best-first.
+ *
+ * Depth is aggregated (the subscription asks for the finest bucket), so this is
+ * the price of the bucket the fill lands in rather than an exact VWAP — close
+ * enough for a cap, which only has to be high enough to clear.
+ */
+export function executableLimitPrice(
+  snapshot: SpotDepthSnapshot | null,
+  size: number,
+  isBuy: boolean,
+): number | null {
+  const levels = isBuy ? snapshot?.asks : snapshot?.bids;
+  if (!levels || levels.length === 0) return null;
+
+  // Subtracting twenty float sizes accumulates enough error to leave a
+  // positive residual on a ladder that exactly covers the order, which would
+  // drop the cap entirely.
+  const filled = size * 1e-9;
+
+  let remaining = size;
+  for (const level of levels) {
+    remaining -= level.size;
+    if (remaining <= filled) return level.price;
+  }
+
+  // The feed truncates each side at MAX_MARKET_DEPTH_LEVELS, so a ladder that
+  // runs out is indistinguishable from a book that has. Capping at the worst
+  // visible level would strand the order in front of liquidity the caller's
+  // slippage already allowed.
+  return null;
 }
 
 /** 24h change in percent units (5 = +5%), or null without a 24h baseline. */
