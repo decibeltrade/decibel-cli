@@ -1,5 +1,6 @@
 import { AccountAddress } from "@aptos-labs/ts-sdk";
 import {
+  addressesEqual,
   DecibelReadDex,
   getSpotMarketAddr,
   roundToTickSizeForSide,
@@ -168,7 +169,7 @@ export async function findSpotAssetContext(
   marketAddr: string,
 ): Promise<SpotAssetContext | undefined> {
   const contexts = await readDex.spotAssetContexts.getAll();
-  return contexts.find((c) => c.market_addr.toLowerCase() === marketAddr.toLowerCase());
+  return contexts.find((c) => addressesEqual(c.market_addr, marketAddr));
 }
 
 /**

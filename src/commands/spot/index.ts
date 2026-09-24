@@ -1,3 +1,4 @@
+import { addressesEqual } from "@decibeltrade/sdk";
 import { Command } from "commander";
 import inquirer from "inquirer";
 
@@ -266,9 +267,7 @@ export function createSpotCommand(): Command {
             // Treating a failed lookup as "zero orders" made a typo look like
             // an empty book.
             const market = await findSpotMarket(readDex, params.symbol);
-            orderCount = items.filter(
-              (o) => o.market.toLowerCase() === market.market_addr.toLowerCase(),
-            ).length;
+            orderCount = items.filter((o) => addressesEqual(o.market, market.market_addr)).length;
           }
 
           if (orderCount === 0) {

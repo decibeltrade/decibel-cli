@@ -38,11 +38,16 @@ const mockWriteDex = {
   cancelTpSlOrderForPosition: vi.fn(),
 };
 
-vi.mock("@decibeltrade/sdk", () => ({
-  TimeInForce: { GoodTillCanceled: 0, PostOnly: 1, ImmediateOrCancel: 2 },
-  DecibelReadDex: vi.fn(),
-  DecibelWriteDex: vi.fn(),
-}));
+vi.mock("@decibeltrade/sdk", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("@decibeltrade/sdk")>();
+  return {
+    addressComparisonKey: actual.addressComparisonKey,
+    addressesEqual: actual.addressesEqual,
+    TimeInForce: { GoodTillCanceled: 0, PostOnly: 1, ImmediateOrCancel: 2 },
+    DecibelReadDex: vi.fn(),
+    DecibelWriteDex: vi.fn(),
+  };
+});
 
 vi.mock("../../src/services/dex-factory.js", () => ({
   createReadDex: vi.fn(() => mockReadDex),
@@ -339,6 +344,25 @@ describe("trading actions", () => {
       mockReadDex.userOpenOrders.getByAddr.mockResolvedValue({
         items: [
           { order_id: "1", market: "0xbtc" },
+          { order_id: "2", market: "0xother" },
+        ],
+      });
+      mockWriteDex.cancelOrder.mockResolvedValue({ hash: "0xhash" });
+
+      const result = await cancelAllOrders({ symbol: "BTC/USD" });
+
+      expect(result.cancelled).toBe(1);
+      expect(result.total).toBe(1);
+    });
+
+    it("matches a short-form order market against a zero-padded market address", async () => {
+      const shortAddr = `0x${"ab".repeat(31)}`;
+      mockReadDex.markets.getAll.mockResolvedValueOnce([
+        { ...mockMarkets[0], market_addr: `0x00${"ab".repeat(31)}` },
+      ]);
+      mockReadDex.userOpenOrders.getByAddr.mockResolvedValue({
+        items: [
+          { order_id: "1", market: shortAddr },
           { order_id: "2", market: "0xother" },
         ],
       });

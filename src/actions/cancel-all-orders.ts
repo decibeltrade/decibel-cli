@@ -1,3 +1,4 @@
+import { addressComparisonKey } from "@decibeltrade/sdk";
 import { z } from "zod";
 
 import {
@@ -32,7 +33,8 @@ export async function cancelAllOrders(
 
   if (params.symbol) {
     const market = await findMarket(readDex, params.symbol);
-    orders = orders.filter((o) => o.market.toLowerCase() === market.market_addr.toLowerCase());
+    const marketKey = addressComparisonKey(market.market_addr);
+    orders = orders.filter((o) => addressComparisonKey(o.market) === marketKey);
   }
 
   if (orders.length === 0) {

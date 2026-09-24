@@ -1,3 +1,4 @@
+import { addressesEqual } from "@decibeltrade/sdk";
 import { z } from "zod";
 
 import {
@@ -28,9 +29,7 @@ export async function setMarginType(params: SetMarginTypeParams, dexOptions: Dex
     includeDeleted: true,
     limit: 100,
   });
-  const position = positions.find(
-    (p) => p.market.toLowerCase() === market.market_addr.toLowerCase(),
-  );
+  const position = positions.find((p) => addressesEqual(p.market, market.market_addr));
 
   const currentLeverage = position?.user_leverage ?? 1;
 

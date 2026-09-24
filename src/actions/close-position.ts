@@ -1,4 +1,4 @@
-import { TimeInForce } from "@decibeltrade/sdk";
+import { addressesEqual, TimeInForce } from "@decibeltrade/sdk";
 import { z } from "zod";
 
 import {
@@ -38,9 +38,7 @@ export async function closePosition(
     limit: 100,
   });
 
-  const position = positions.find(
-    (p) => p.market.toLowerCase() === market.market_addr.toLowerCase(),
-  );
+  const position = positions.find((p) => addressesEqual(p.market, market.market_addr));
 
   if (!position || position.size === 0) {
     throw new Error(`No open position found for ${params.symbol}`);

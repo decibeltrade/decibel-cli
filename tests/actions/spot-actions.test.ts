@@ -73,6 +73,8 @@ const mockWriteDex = {
 vi.mock("@decibeltrade/sdk", async (importOriginal) => {
   const actual = await importOriginal<typeof import("@decibeltrade/sdk")>();
   return {
+    addressComparisonKey: actual.addressComparisonKey,
+    addressesEqual: actual.addressesEqual,
     roundToTickSizeForSide: actual.roundToTickSizeForSide,
     getSpotMarketAddr: actual.getSpotMarketAddr,
     TimeInForce: { GoodTillCanceled: 0, PostOnly: 1, ImmediateOrCancel: 2 },

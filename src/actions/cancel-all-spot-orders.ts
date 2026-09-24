@@ -1,3 +1,4 @@
+import { addressComparisonKey } from "@decibeltrade/sdk";
 import { z } from "zod";
 
 import {
@@ -74,8 +75,8 @@ export async function cancelAllSpotOrders(
   const subaccountAddr = resolveSubaccountAddress(dexOptions);
   const readDex = createReadDex(dexOptions);
 
-  const marketAddr = params.symbol
-    ? (await findSpotMarket(readDex, params.symbol)).market_addr.toLowerCase()
+  const marketKey = params.symbol
+    ? addressComparisonKey((await findSpotMarket(readDex, params.symbol)).market_addr)
     : undefined;
 
   // Tracked by order id: an order retried across passes counts once, and an id
@@ -111,7 +112,9 @@ export async function cancelAllSpotOrders(
 
   for (let pass = 0; pass < MAX_PASSES; pass++) {
     const { orders, truncated } = await fetchSpotOpenOrders(readDex, subaccountAddr);
-    const batch = marketAddr ? orders.filter((o) => o.market.toLowerCase() === marketAddr) : orders;
+    const batch = marketKey
+      ? orders.filter((o) => addressComparisonKey(o.market) === marketKey)
+      : orders;
     const actionable = batch.filter((o) => !cancelledIds.has(o.order_id));
 
     if (actionable.length === 0) {
@@ -123,7 +126,7 @@ export async function cancelAllSpotOrders(
       // every matching order behind the offset ceiling. Those orders are not
       // ours to cancel, so the window never moves and no number of passes (or
       // re-runs) makes progress. Say that plainly instead of retrying.
-      if (marketAddr !== undefined && batch.length === 0) {
+      if (marketKey !== undefined && batch.length === 0) {
         throw unreachable(orders.length);
       }
 

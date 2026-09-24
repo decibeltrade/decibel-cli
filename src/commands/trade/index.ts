@@ -1,3 +1,4 @@
+import { addressesEqual } from "@decibeltrade/sdk";
 import { Command } from "commander";
 import inquirer from "inquirer";
 
@@ -509,8 +510,8 @@ export function createTradeCommand(): Command {
             (m) => m.market_name.toLowerCase() === options.market?.toLowerCase(),
           );
           if (market) {
-            orderCount = ordersResponse.items.filter(
-              (o) => o.market.toLowerCase() === market.market_addr.toLowerCase(),
+            orderCount = ordersResponse.items.filter((o) =>
+              addressesEqual(o.market, market.market_addr),
             ).length;
           }
         }

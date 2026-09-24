@@ -1,3 +1,4 @@
+import { addressesEqual } from "@decibeltrade/sdk";
 import { z } from "zod";
 
 import { createReadDex, DexOptions, resolveSubaccountAddress } from "../services/dex-factory.js";
@@ -20,14 +21,12 @@ export async function getTpSl(params: GetTpSlParams, dexOptions: DexOptions = {}
     subAddr: subaccountAddr,
     limit: 100,
   });
-  const position = positions.find(
-    (p) => p.market.toLowerCase() === market.market_addr.toLowerCase(),
-  );
+  const position = positions.find((p) => addressesEqual(p.market, market.market_addr));
 
   // Get fixed-size TP/SL orders from open orders
   const ordersResponse = await readDex.userOpenOrders.getByAddr({ subAddr: subaccountAddr });
   const tpSlOrders = ordersResponse.items.filter(
-    (o) => o.is_tpsl && o.market.toLowerCase() === market.market_addr.toLowerCase(),
+    (o) => o.is_tpsl && addressesEqual(o.market, market.market_addr),
   );
 
   return {
